@@ -14,6 +14,7 @@ class Gettext {
 			'Content-Type'              => 'text/plain; charset=UTF-8',
 			'Content-Transfer-Encoding' => '8bit',
 			'Plural-Forms'              => 'nplurals=2; plural=(n==1)? 0 : 1;',
+			'Last-Translator'           => 'JAO NetteTranslator',
 		);
 
 	/** @var array **/
@@ -227,6 +228,43 @@ class Gettext {
 	 * @todo currently doing shit
 	 */
 	private function generatePoFile($path){
+		$eol = "\n";
+		foreach($this->getHeaders() as $key => $val){
+			$headers[] = $key.': '.$val.$eol;
+		}
+
+		$fp = fopen($path,'w');
+		foreach(array_merge(array('' =>  array(implode($headers))),$this->getTranslations()) as $original => $translation){
+			fwrite($fp,  $this->encodeGettxtPoBlock($original, $translation,$eol));
+		}
+		fclose($fp);
+	}
+
+
+	/**
+	 * Encode one translation to .po gettext file
+	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param string $original Original untranslated string
+	 * @param array $translations Translation string
+	 * @param atring $eol End of line symbol
+	 * @return string
+	 * @todo Add correct support for plural form
+	 */
+	private function encodeGettxtPoBlock($original,$translations,$eol='\n'){
+		$translationsCount = count($translations);
+
+		$block  = 'msgid "'.$original.'"'.$eol;
+
+		if($translationsCount>1){ $block .= 'msgid_plural "'.$original.'"'.$eol;	} // Ugly workaround for plural forms
+
+		foreach($translations as $key => $translation){
+			if(strpos(trim($translation),"\n")>0){
+				$translation = '"'.$eol.'"'.str_replace("\n",'\n"'.$eol.'"',trim($translation)).'\n';
+			}
+			$block .= 'msgstr'.($translationsCount>1? '['.$key.']' : '').' "'.$translation.'"'.$eol;
+		}
+		$block .= $eol;
+		return $block;
 	}
 
 	/**
@@ -237,6 +275,8 @@ class Gettext {
 	 * @todo currently doing shit
 	 */
 	private function generateMoFile($path){
+		$fp = fopen($path,'w');
+		fclose($fp);
 	}
 
 	/**
@@ -275,5 +315,20 @@ class Gettext {
 	 */
 	public function setHeader($index,$value){
 		$this->headers[$index] = $value;
+	}
+
+	/**
+	 * Set translation
+	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param string $original
+	 * @param string|array $translation
+	 * @return type
+	 */
+	public function setTranslation($original,$translation){
+		if(is_array($translation)){
+			$this->translations[$original] = $translation;
+		} else {
+			$this->translations[$original] = array('0' => $translation);
+		}
 	}
 }
