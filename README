@@ -1,0 +1,9 @@
+JAO NetteTranslator (cc) Pavel Železný (2bfree), 2012 (http://www.pavelzelezny.cz)
+
+Requirements
+------------
+Nette Framework 2.0 or higher. (PHP 5.3 edition)
+
+Documentation and Examples
+--------------------------
+Here will be my from scratch rewritten variant of great but old marten-cz/NetteTranslator what I use before.
