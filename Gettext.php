@@ -29,12 +29,13 @@ class Gettext {
 	 * @param string $path Optional gettext dictionary file path
 	 */
 	public function __construct($path=NULL) {
-		$this->setDefaultHeader('POT-Creation-Date',date("Y-m-d H:iO"));
-		$this->setDefaultHeader('PO-Revision-Date',date("Y-m-d H:iO"));
-
 		if($path!==NULL){
 			$this->loadDictionary($path);
 		}
+
+		$this->setDefaultHeader('POT-Creation-Date',date("Y-m-d H:iO"));
+		$this->setDefaultHeader('PO-Revision-Date',date("Y-m-d H:iO"));
+		$this->setHeader('PO-Revision-Date',date("Y-m-d H:iO"));
 	}
 
 	/**
@@ -131,7 +132,7 @@ class Gettext {
 	 * @param string $path Gettext .mo file path
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/PO-Files.html#PO-Files
-	 * @todo Missing some advanced features (msgid_plural,comments)
+	 * @todo Missing some advanced features (comments)
 	 */
 	private function parsePoFile($path){
 		$fp = @fopen($path, 'r');
@@ -139,20 +140,27 @@ class Gettext {
 		while(feof($fp)!=TRUE){
 			$buffer = fgets($fp);
 			if(preg_match('/^msgid "(.*)"$/', $buffer,$matches)){
-				$original = $matches[1];
-			} elseif ((preg_match('/^msgstr "(.*)"$/', $buffer,$matches))&&($original!='')) {
-				$lastIndex = 0;
-				$this->translations[$original][$lastIndex] = str_replace('\n',"\n",$matches[1]);
-			} elseif ((preg_match('/^msgstr\[([0-9]+)\] "(.*)"$/', $buffer,$matches))&&($original!='')) {
+				$original[0] = $matches[1];
+				if($original[0]!=''){
+				    $this->translations[$original[0]]['original'][0]=$original[0];
+				}
+			} elseif(preg_match('/^msgid_plural "(.*)"$/', $buffer,$matches)){
+				$original[1] = $matches[1];
+				$this->translations[$original[0]]['original'][1]=$original[1];
+			} elseif ((preg_match('/^msgstr "(.*)"$/', $buffer,$matches))&&($original[0]!='')) {
+				$this->translations[$original[0]]['translation'][0] = str_replace('\n',"\n",$matches[1]);
+			} elseif ((preg_match('/^msgstr\[([0-9]+)\] "(.*)"$/', $buffer,$matches))&&($original[0]!='')) {
 				$lastIndex = $matches[1];
-				$this->translations[$original][$lastIndex] = str_replace('\n',"\n",$matches[2]);
+				$this->translations[$original[0]]['translation'][$lastIndex] = str_replace('\n',"\n",$matches[2]);
 			} elseif (preg_match('/^"(.*)"$/', $buffer,$matches)){
-				if($original!=''){
-					$this->translations[$original][$lastIndex] .= str_replace('\n',"\n",$matches[1]);
+				if($original[0]!=''){
+					$this->translations[$original[0]]['translation'][isset($lastIndex)?$lastIndex:0] .= str_replace('\n',"\n",$matches[1]);
 				} else {
 					$delimiter = strpos($matches[1],': ');
 					$this->headers[substr($matches[1],0,$delimiter)] = trim(substr(str_replace('\n',"\n",$matches[1]),$delimiter+2));
 				}
+			} elseif ( $buffer == ''){
+				unset($original,$lastIndex);
 			}
 		}
 
@@ -188,11 +196,12 @@ class Gettext {
 		$translationIndex = $read(8 * $total, current($read(4,16))); /* Array contain binary position of each translated string */
 
 		for ($i = 0; $i < $total; ++$i) {
-			$original = ($originalIndex[$i * 2 + 1] != 0) ? explode(pack('N',chr(0x00)), $read($originalIndex[$i * 2 + 1],$originalIndex[$i * 2 + 2],FALSE)) : '';
-			$translation = ($translationIndex[$i * 2 + 1] != 0) ? explode(pack('N',chr(0x00)), $translation = $read($translationIndex[$i * 2 + 1],$translationIndex[$i * 2 + 2],FALSE)) : "";
+			$original = ($originalIndex[$i * 2 + 1] != 0) ? explode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)), $read($originalIndex[$i * 2 + 1],$originalIndex[$i * 2 + 2],FALSE)) : '';
+			$translation = ($translationIndex[$i * 2 + 1] != 0) ? explode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)), $translation = $read($translationIndex[$i * 2 + 1],$translationIndex[$i * 2 + 2],FALSE)) : "";
 
 			if ($original != "") {
-				$this->translations[current($original)] = $translation;
+				$this->translations[is_array($original)? $original[0] : $original]['original'] = $original;
+				$this->translations[is_array($original)? $original[0] : $original]['translation'] = $translation;
 			} else {
 				$this->headers = $this->parseMoMetadata(current($translation));
 			}
@@ -225,7 +234,6 @@ class Gettext {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext .po file path
 	 * @return void
-	 * @todo currently doing shit
 	 */
 	private function generatePoFile($path){
 		$eol = "\n";
@@ -234,8 +242,9 @@ class Gettext {
 		}
 
 		$fp = fopen($path,'w');
-		foreach(array_merge(array('' =>  array(implode($headers))),$this->getTranslations()) as $original => $translation){
-			fwrite($fp,  $this->encodeGettxtPoBlock($original, $translation,$eol));
+		fwrite($fp,  $this->encodeGettxtPoBlock('',implode($headers)));
+		foreach($this->getTranslations() as $data){
+			fwrite($fp,  $this->encodeGettxtPoBlock($data['original'], $data['translation'],$eol));
 		}
 		fclose($fp);
 	}
@@ -244,18 +253,22 @@ class Gettext {
 	/**
 	 * Encode one translation to .po gettext file
 	 * @author Pavel Železný <info@pavelzelezny.cz>
-	 * @param string $original Original untranslated string
+	 * @param array $original Original untranslated string
 	 * @param array $translations Translation string
 	 * @param atring $eol End of line symbol
 	 * @return string
-	 * @todo Add correct support for plural form
 	 */
-	private function encodeGettxtPoBlock($original,$translations,$eol='\n'){
+	private function encodeGettxtPoBlock($original,$translations,$eol="\n"){
+		$original = (array) $original;
+		$translations = (array) $translations;
+
 		$translationsCount = count($translations);
 
-		$block  = 'msgid "'.$original.'"'.$eol;
+		$block  = 'msgid "'.current($original).'"'.$eol;
 
-		if($translationsCount>1){ $block .= 'msgid_plural "'.$original.'"'.$eol;	} // Ugly workaround for plural forms
+		if(count($original)>1){
+			$block .= 'msgid_plural "'.end($original).'"'.$eol;
+		}
 
 		foreach($translations as $key => $translation){
 			if(strpos(trim($translation),"\n")>0){
@@ -320,15 +333,19 @@ class Gettext {
 	/**
 	 * Set translation
 	 * @author Pavel Železný <info@pavelzelezny.cz>
-	 * @param string $original
+	 * @param string|array $original
 	 * @param string|array $translation
-	 * @return type
+	 * @return void
+	 * @throw \BadMethodCallException
 	 */
 	public function setTranslation($original,$translation){
-		if(is_array($translation)){
-			$this->translations[$original] = $translation;
-		} else {
-			$this->translations[$original] = array('0' => $translation);
+		if((is_array($translation)===TRUE)&&((count($original) < 2)||(is_array($original)===FALSE))){
+		    throw new \BadMethodCallException('Translation with plurals need to have plural definition.');
+		} elseif ($original==''){
+			throw new \BadMethodCallException('Untranslated string cannot be empty.');
 		}
+
+		$this->translations[is_array($original) ? $original[0] : $original]['original'] = is_array($original) ? array_values($original) : array('0' => $original);
+		$this->translations[is_array($original) ? $original[0] : $original]['translation'] = is_array($translation) ? array_values($translation) : array('0' => $translation);
 	}
 }
