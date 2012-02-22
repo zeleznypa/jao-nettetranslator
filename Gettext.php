@@ -129,6 +129,8 @@ class Gettext {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext .mo file path
 	 * @return \Gettext  provides a fluent interface
+	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/PO-Files.html#PO-Files
+	 * @todo Missing some advanced features (msgid_plural,comments)
 	 */
 	private function parsePoFile($path){
 		$fp = @fopen($path, 'r');
@@ -163,6 +165,8 @@ class Gettext {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext .mo file path
 	 * @return \Gettext  provides a fluent interface
+	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/MO-Files.html#MO-Files
+	 * @todo Need review for some advanced features
 	 */
 	private function parseMoFile($path){
 		$fp = @fopen($path,'rb');
