@@ -101,17 +101,39 @@ class Gettext {
 	 * @param string $path Gettext .po file path
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/PO-Files.html#PO-Files
-	 * @todo Missing some advanced features (comments)
+	 * @todo Missing some advanced features (context)
 	 */
 	private function parsePoFile($path){
 		$fp = @fopen($path, 'r');
 
 		while(feof($fp)!=TRUE){
 			$buffer = fgets($fp);
-			if(preg_match('/^msgid "(.*)"$/', $buffer,$matches)){
+			if(preg_match('/^#([.:,]|(\| msgctxt)|(\| msgid)) (.*)$/', $buffer,$matches)){
+				switch ($matches[1]){
+					case '.':
+						$comment['comment'] = $matches[4];
+						break;
+					case ':':
+						$comment['reference'] = $matches[4];
+						break;
+					case ',':
+						$comment['flag'] = $matches[4];
+						break;
+					case '| msgctxt':
+						$comment['previous-context'] = $matches[4];
+						break;
+					case '| msgid':
+						$comment['previous-untranslated-string'] = $matches[4];
+						break;
+				}
+			} elseif(preg_match('/^msgid "(.*)"$/', $buffer,$matches)){
 				$original[0] = $matches[1];
 				if($original[0]!=''){
 				    $this->translations[$original[0]]['original'][0]=$original[0];
+					if(isset($comment)){
+						$this->translations[$original[0]]['comments']=$comment;
+						unset($comment);
+					}
 				}
 			} elseif(preg_match('/^msgid_plural "(.*)"$/', $buffer,$matches)){
 				$original[1] = $matches[1];
@@ -129,7 +151,7 @@ class Gettext {
 					$this->headers[substr($matches[1],0,$delimiter)] = trim(substr(str_replace('\n',"\n",$matches[1]),$delimiter+2));
 				}
 			} elseif ( $buffer == ''){
-				unset($original,$lastIndex);
+				unset($original,$lastIndex,$comment);
 			}
 		}
 
