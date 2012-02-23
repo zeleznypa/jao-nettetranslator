@@ -46,23 +46,28 @@ class Gettext {
 	 * @throws \InvalidArgumentException
 	 */
 	public function loadDictionary($path){
-		if((file_exists($path))&&(is_readable($path))){
-			switch (pathinfo($path,PATHINFO_EXTENSION)) {
-				case 'mo':
-					if(filesize($path)>10){
-						return $this->parseMoFile(basename($path));
-					} else {
-						throw new \InvalidArgumentException('Dictionary file is not .mo compatible');
-					}
-					break;
-				case 'po':
-					return $this->parsePoFile(basename($path));
-					break;
-				default:
-					throw new \InvalidArgumentException('Unsupported file type');
+		if(empty($this->translations)){
+			if((file_exists($path))&&(is_readable($path))){
+				switch (pathinfo($path,PATHINFO_EXTENSION)) {
+					case 'mo':
+						if(filesize($path)>10){
+
+							return $this->parseMoFile(basename($path));
+						} else {
+							throw new \InvalidArgumentException('Dictionary file is not .mo compatible');
+						}
+						break;
+					case 'po':
+						return $this->parsePoFile(basename($path));
+						break;
+					default:
+						throw new \InvalidArgumentException('Unsupported file type');
+				}
+			} else {
+				throw new \InvalidArgumentException('Dictionary file is not exist or is not readable');
 			}
 		} else {
-			throw new \InvalidArgumentException('Dictionary file is not exist or is not readable');
+			throw new \InvalidArgumentException('Dictionary is not empty');
 		}
 	}
 
