@@ -236,15 +236,10 @@ class Gettext {
 	 * @return void
 	 */
 	private function generatePoFile($path){
-		$eol = "\n";
-		foreach($this->getHeaders() as $key => $val){
-			$headers[] = $key.': '.$val.$eol;
-		}
-
 		$fp = fopen($path,'w');
-		fwrite($fp,  $this->encodeGettxtPoBlock('',implode($headers)));
+		fwrite($fp,  $this->encodeGettxtPoBlock('',implode($this->generateHeaders())));
 		foreach($this->getTranslations() as $data){
-			fwrite($fp,  $this->encodeGettxtPoBlock($data['original'], $data['translation'],$eol));
+			fwrite($fp,  $this->encodeGettxtPoBlock($data['original'], $data['translation'],"\n"));
 		}
 		fclose($fp);
 	}
@@ -255,41 +250,82 @@ class Gettext {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param array $original Original untranslated string
 	 * @param array $translations Translation string
-	 * @param atring $eol End of line symbol
 	 * @return string
 	 */
-	private function encodeGettxtPoBlock($original,$translations,$eol="\n"){
+	private function encodeGettxtPoBlock($original,$translations){
 		$original = (array) $original;
 		$translations = (array) $translations;
 
 		$translationsCount = count($translations);
-
-		$block  = 'msgid "'.current($original).'"'.$eol;
+		$block  = 'msgid "'.current($original).'"'."\n";
 
 		if(count($original)>1){
-			$block .= 'msgid_plural "'.end($original).'"'.$eol;
+			$block .= 'msgid_plural "'.end($original).'"'."\n";
 		}
 
 		foreach($translations as $key => $translation){
 			if(strpos(trim($translation),"\n")>0){
-				$translation = '"'.$eol.'"'.str_replace("\n",'\n"'.$eol.'"',trim($translation)).'\n';
+				$translation = '"'."\n".'"'.str_replace("\n",'\n"'."\n".'"',trim($translation)).'\n';
 			}
-			$block .= 'msgstr'.($translationsCount>1? '['.$key.']' : '').' "'.$translation.'"'.$eol;
+			$block .= 'msgstr'.($translationsCount>1? '['.$key.']' : '').' "'.$translation.'"'."\n";
 		}
-		$block .= $eol;
+		$block .= "\n";
 		return $block;
 	}
 
 	/**
 	 * Save dictionary data into gettext .mo file
-	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @author Don't know who is first autor but my source is https://github.com/marten-cz/NetteTranslator
 	 * @param string $path Gettext .mo file path
 	 * @return void
-	 * @todo currently doing shit
 	 */
 	private function generateMoFile($path){
-		$fp = fopen($path,'w');
-		fclose($fp);
+		$dictionary = $this->getTranslations();
+		$metadata = implode($this->generateHeaders());
+		$items = count($dictionary) + 1;
+		$strings = $metadata.iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00));
+		$idsOffsets = array(0, 28 + $items * 16);
+		$stringsOffsets = array(array(0, strlen($metadata)));
+		$ids='';
+		foreach ($dictionary as $value) {
+			$id = $value['original'][0];
+			if (is_array($value['original']) && count($value['original']) > 1)
+				$id .= iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)).end($value['original']);
+
+			$string = implode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)), $value['translation']);
+			$idsOffsets[] = strlen($id);
+			$idsOffsets[] = strlen($ids) + 28 + $items * 16;
+			$stringsOffsets[] = array(strlen($strings), strlen($string));
+			$ids .= $id.iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00));
+			$strings .= $string.iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00));
+		}
+
+		$valuesOffsets = array();
+		foreach ($stringsOffsets as $offset) {
+			list ($all, $one) = $offset;
+			$valuesOffsets[] = $one;
+			$valuesOffsets[] = $all + strlen($ids) + 28 + $items * 16;
+		}
+		$offsets= array_merge($idsOffsets, $valuesOffsets);
+
+		$mo = pack('Iiiiiii', 0x950412de, 0, $items, 28, 28 + $items * 8, 0, 28 + $items * 16);
+		foreach ($offsets as $offset)
+			$mo .= pack('i', $offset);
+
+		file_put_contents($path, $mo.$ids.$strings);
+	}
+
+
+	/**
+	 * Return headers to store in file
+	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @return array
+	 */
+	private function generateHeaders(){
+		foreach($this->getHeaders() as $key => $val){
+			$headers[] = $key.': '.$val."\n";
+		}
+		return $headers;
 	}
 
 	/**
@@ -347,5 +383,18 @@ class Gettext {
 
 		$this->translations[is_array($original) ? $original[0] : $original]['original'] = is_array($original) ? array_values($original) : array('0' => $original);
 		$this->translations[is_array($original) ? $original[0] : $original]['translation'] = is_array($translation) ? array_values($translation) : array('0' => $translation);
+	}
+
+	/**
+	 * Set translation
+	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param string $original
+	 * @return void
+	 */
+	public function removeTranslation($original){
+		if(isset($this->translations[$original])){
+			unset($this->translations[$original]);
+		}
+
 	}
 }
