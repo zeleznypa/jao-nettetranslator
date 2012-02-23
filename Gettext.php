@@ -46,15 +46,23 @@ class Gettext {
 	 * @throws \InvalidArgumentException
 	 */
 	public function loadDictionary($path){
-		switch (pathinfo($path,PATHINFO_EXTENSION)) {
-			case 'mo':
-				return $this->loadMoFile(basename($path));
-				break;
-			case 'po':
-				return $this->loadPoFile(basename($path));
-				break;
-			default:
-				throw new \InvalidArgumentException('Unsupported file type');
+		if((file_exists($path))&&(is_readable($path))){
+			switch (pathinfo($path,PATHINFO_EXTENSION)) {
+				case 'mo':
+					if(filesize($path)>10){
+						return $this->parseMoFile(basename($path));
+					} else {
+						throw new \InvalidArgumentException('Dictionary file is not .mo compatible');
+					}
+					break;
+				case 'po':
+					return $this->parsePoFile(basename($path));
+					break;
+				default:
+					throw new \InvalidArgumentException('Unsupported file type');
+			}
+		} else {
+			throw new \InvalidArgumentException('Dictionary file is not exist or is not readable');
 		}
 	}
 
@@ -66,81 +74,17 @@ class Gettext {
 	 * @throws \InvalidArgumentException
 	 */
 	public function saveDictionary($path){
-		switch (pathinfo($path,PATHINFO_EXTENSION)) {
-			case 'mo':
-				return $this->saveMoFile($path);
-				break;
-			case 'po':
-				return $this->savePoFile($path);
-				break;
-			default:
-				throw new \InvalidArgumentException('Unsupported file type');
-		}
-	}
-
-	/**
-	 * Load data from .po gettext file for future work
-	 * @author Pavel Železný <info@pavelzelezny.cz>
-	 * @param string $path Gettext .po file path
-	 * @return \Gettext  provides a fluent interface
-	 * @throws \InvalidArgumentException
-	 */
-	private function loadPoFile($path) {
-		if((file_exists($path))&&(is_readable($path))){
-			$this->parsePoFile($path);
-			return $this;
-		} else {
-			throw new \InvalidArgumentException('Dictionary file is not exist or is not readable');
-		}
-	}
-
-	/**
-	 * Save data into .po gettext file
-	 * @author Pavel Železný <info@pavelzelezny.cz>
-	 * @param string $path Gettext .po file path
-	 * @return \Gettext  provides a fluent interface
-	 * @throws \InvalidArgumentException
-	 */
-	private function savePoFile($path) {
 		if(((file_exists($path)===TRUE)&&(is_writable($path)))||((file_exists($path)===FALSE)&&(is_writable(dirname($path))))){
-			$this->generatePoFile($path);
-			return $this;
-		} else {
-			throw new \InvalidArgumentException('Destination is not writeable');
-		}
-	}
-
-	/**
-	 * Load data from .mo gettext file
-	 * @author Pavel Železný <info@pavelzelezny.cz>
-	 * @param string $path Gettext .mo file path
-	 * @return \Gettext  provides a fluent interface
-	 * @throws \InvalidArgumentException
-	 */
-	private function loadMoFile($path) {
-		if((file_exists($path))&&(is_readable($path))){
-			if(filesize($path)>10){
-				$this->parseMoFile($path);
-				return $this;
-			} else {
-				throw new \InvalidArgumentException('Dictionary file is not .mo compatible');
+			switch (pathinfo($path,PATHINFO_EXTENSION)) {
+				case 'mo':
+					return $this->generateMoFile($path);
+					break;
+				case 'po':
+					return $this->generatePoFile($path);
+					break;
+				default:
+					throw new \InvalidArgumentException('Unsupported file type');
 			}
-		} else {
-			throw new \InvalidArgumentException('Dictionary file is not exist or is not readable');
-		}
-	}
-
-	/**
-	 * Save data into .mo gettext file
-	 * @author Pavel Železný <info@pavelzelezny.cz>
-	 * @param string $path Gettext .mo file path
-	 * @return \Gettext  provides a fluent interface
-	 * @throws \InvalidArgumentException
-	 */
-	private function saveMoFile($path) {
-		if(((file_exists($path)===TRUE)&&(is_writable($path)))||((file_exists($path)===FALSE)&&(is_writable(dirname($path))))){
-			$this->generateMoFile($path);
-			return $this;
 		} else {
 			throw new \InvalidArgumentException('Destination is not writeable');
 		}
