@@ -127,9 +127,9 @@ class Gettext {
 	}
 
 	/**
-	 * Parse content of gettext .mo file
+	 * Parse content of gettext .po file
 	 * @author Pavel Železný <info@pavelzelezny.cz>
-	 * @param string $path Gettext .mo file path
+	 * @param string $path Gettext .po file path
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/PO-Files.html#PO-Files
 	 * @todo Missing some advanced features (comments)
