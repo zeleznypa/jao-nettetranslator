@@ -66,3 +66,6 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 	// Save dictionary
 	$gettext->saveDictionary('./dictionary.po');
 	$gettext->saveDictionary('./dictionary.mo');
+
+### 6) Discussion ###
+When you need to discuss, write in "forum"(http://forum.nette.org/cs/10020-jao-nettetranslator-translatorpanel-jinak-a-mozna-nekdy-i-lepe) in czech or english language.

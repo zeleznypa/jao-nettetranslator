@@ -386,7 +386,7 @@ class Gettext {
 	}
 
 	/**
-	 * Set translation
+	 * Remove unwanted translation
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $original
 	 * @return void
