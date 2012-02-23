@@ -208,7 +208,7 @@ class Gettext {
 		$fp = fopen($path,'w');
 		fwrite($fp,  $this->encodeGettxtPoBlock('',implode($this->generateHeaders())));
 		foreach($this->getTranslations() as $data){
-			fwrite($fp,  $this->encodeGettxtPoBlock($data['original'], $data['translation'],"\n"));
+			fwrite($fp,$this->encodeGettxtPoBlock($data['original'],$data['translation']));
 		}
 		fclose($fp);
 	}
