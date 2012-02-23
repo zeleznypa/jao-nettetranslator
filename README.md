@@ -17,26 +17,26 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 
 	$gettext = new Gettext();
 	$gettext->loadDictionary('./dictionary.po');
-	printf("<pre>%s</pre>",print_r($gettext->getTranslations(),true));
+	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($gettext->getTranslations(),true));
 
 
 ### 2) Alternative loading dictionary from .po file ###
 
 	$gettext = new Gettext('./dictionary.po');
-	printf("<pre>%s</pre>",print_r($gettext->getTranslations(),true));
+	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($gettext->getTranslations(),true));
 
 
 ### 3) Load dictionary from .mo file ###
 
 	$gettext = new Gettext();
 	$gettext->loadDictionary('./dictionary.mo');
-	printf("<pre>%s</pre>",print_r($gettext->getTranslations(),true));
+	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($gettext->getTranslations(),true));
 
 
 ### 4) Alternative loading dictionary from .mo file ###
 
 	$gettext = new Gettext('./dictionary.mo');
-	printf("<pre>%s</pre>",print_r($gettext->getTranslations(),true));
+	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($gettext->getTranslations(),true));
 
 
 ### 5) Generating new dictionary ###

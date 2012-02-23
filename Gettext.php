@@ -48,10 +48,10 @@ class Gettext {
 	public function loadDictionary($path){
 		switch (pathinfo($path,PATHINFO_EXTENSION)) {
 			case 'mo':
-				return $this->loadMoFile($path);
+				return $this->loadMoFile(basename($path));
 				break;
 			case 'po':
-				return $this->loadPoFile($path);
+				return $this->loadPoFile(basename($path));
 				break;
 			default:
 				throw new \InvalidArgumentException('Unsupported file type');
@@ -83,11 +83,15 @@ class Gettext {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext .po file path
 	 * @return \Gettext  provides a fluent interface
-	 * @todo Add detection of file exist, readable, .po format
+	 * @throws \InvalidArgumentException
 	 */
 	private function loadPoFile($path) {
-		$this->parsePoFile($path);
-		return $this;
+		if((file_exists($path))&&(is_readable($path))){
+			$this->parsePoFile($path);
+			return $this;
+		} else {
+			throw new \InvalidArgumentException('Dictionary file is not exist or is not readable');
+		}
 	}
 
 	/**
@@ -95,11 +99,15 @@ class Gettext {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext .po file path
 	 * @return \Gettext  provides a fluent interface
-	 * @todo Add detection of directory and optional file exist and writeable
+	 * @throws \InvalidArgumentException
 	 */
 	private function savePoFile($path) {
-		$this->generatePoFile($path);
-		return $this;
+		if(((file_exists($path)===TRUE)&&(is_writable($path)))||((file_exists($path)===FALSE)&&(is_writable(dirname($path))))){
+			$this->generatePoFile($path);
+			return $this;
+		} else {
+			throw new \InvalidArgumentException('Destination is not writeable');
+		}
 	}
 
 	/**
@@ -107,11 +115,19 @@ class Gettext {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext .mo file path
 	 * @return \Gettext  provides a fluent interface
-	 * @todo Add detection of file exist, readable, .mo format
+	 * @throws \InvalidArgumentException
 	 */
 	private function loadMoFile($path) {
-		$this->parseMoFile($path);
-		return $this;
+		if((file_exists($path))&&(is_readable($path))){
+			if(filesize($path)>10){
+				$this->parseMoFile($path);
+				return $this;
+			} else {
+				throw new \InvalidArgumentException('Dictionary file is not .mo compatible');
+			}
+		} else {
+			throw new \InvalidArgumentException('Dictionary file is not exist or is not readable');
+		}
 	}
 
 	/**
@@ -119,11 +135,15 @@ class Gettext {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext .mo file path
 	 * @return \Gettext  provides a fluent interface
-	 * @todo Add detection of directory and optional file exist and writeable
+	 * @throws \InvalidArgumentException
 	 */
 	private function saveMoFile($path) {
-		$this->generateMoFile($path);
-		return $this;
+		if(((file_exists($path)===TRUE)&&(is_writable($path)))||((file_exists($path)===FALSE)&&(is_writable(dirname($path))))){
+			$this->generateMoFile($path);
+			return $this;
+		} else {
+			throw new \InvalidArgumentException('Destination is not writeable');
+		}
 	}
 
 	/**
