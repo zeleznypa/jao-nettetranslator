@@ -57,7 +57,12 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 	$gettext->setTranslation(array('%s monkey','%s monkeys'),array('%s opice','%s opičky','%s opiček'));
 
 	// Set untranslated string for translator team
-	$gettext->setTranslation('Translate this please',NULL);
+	$gettext->setTranslation('Translate this please');
+
+	// Set same translation with another context
+	// Many apps have problems with context or multiple same untranslated strings
+	$gettext->setTranslation('New','Nový','New man');
+	$gettext->setTranslation('New','Nová','New woman');
 
 	// Optional show content of dictionary
 	printf("<h2>Headers:</h2><pre>%s</pre>",print_r($gettext->getHeaders(),true));
