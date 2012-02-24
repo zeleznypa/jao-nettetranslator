@@ -35,7 +35,6 @@ class Gettext {
 
 		$this->setDefaultHeader('POT-Creation-Date',date("Y-m-d H:iO"));
 		$this->setDefaultHeader('PO-Revision-Date',date("Y-m-d H:iO"));
-		$this->setHeader('PO-Revision-Date',date("Y-m-d H:iO"));
 	}
 
 	/**
@@ -51,7 +50,6 @@ class Gettext {
 				switch (pathinfo($path,PATHINFO_EXTENSION)) {
 					case 'mo':
 						if(filesize($path)>10){
-
 							return $this->parseMoFile(basename($path));
 						} else {
 							throw new \InvalidArgumentException('Dictionary file is not .mo compatible');
@@ -79,6 +77,9 @@ class Gettext {
 	 * @throws \InvalidArgumentException
 	 */
 	public function saveDictionary($path){
+		// Force datetime change of newly generated dictionary
+		$this->setHeader('PO-Revision-Date',date("Y-m-d H:iO"));
+
 		if(((file_exists($path)===TRUE)&&(is_writable($path)))||((file_exists($path)===FALSE)&&(is_writable(dirname($path))))){
 			switch (pathinfo($path,PATHINFO_EXTENSION)) {
 				case 'mo':
@@ -126,32 +127,41 @@ class Gettext {
 						$comment['previous-untranslated-string'] = $matches[4];
 						break;
 				}
+			} elseif(preg_match('/^msgctx "(.*)"$/', $buffer,$matches)){
+				$context = $matches[1];
 			} elseif(preg_match('/^msgid "(.*)"$/', $buffer,$matches)){
 				$original[0] = $matches[1];
+
 				if($original[0]!=''){
-				    $this->translations[$original[0]]['original'][0]=$original[0];
+					if(isset($context)){
+						$translations =& $this->translations[$original[0]][$context];
+					} else {
+						$translations =& $this->translations[$original[0]][''];
+					}
+
+				    $translations['original'][0]=$original[0];
 					if(isset($comment)){
-						$this->translations[$original[0]]['comments']=$comment;
+						$translations['comments']=$comment;
 						unset($comment);
 					}
 				}
 			} elseif(preg_match('/^msgid_plural "(.*)"$/', $buffer,$matches)){
 				$original[1] = $matches[1];
-				$this->translations[$original[0]]['original'][1]=$original[1];
+				$translations['original'][1]=$original[1];
 			} elseif ((preg_match('/^msgstr "(.*)"$/', $buffer,$matches))&&($original[0]!='')) {
-				$this->translations[$original[0]]['translation'][0] = str_replace('\n',"\n",$matches[1]);
+				$translations['translation'][0] = str_replace('\n',"\n",$matches[1]);
 			} elseif ((preg_match('/^msgstr\[([0-9]+)\] "(.*)"$/', $buffer,$matches))&&($original[0]!='')) {
 				$lastIndex = $matches[1];
-				$this->translations[$original[0]]['translation'][$lastIndex] = str_replace('\n',"\n",$matches[2]);
+				$translations['translation'][$lastIndex] = str_replace('\n',"\n",$matches[2]);
 			} elseif (preg_match('/^"(.*)"$/', $buffer,$matches)){
 				if($original[0]!=''){
-					$this->translations[$original[0]]['translation'][isset($lastIndex)?$lastIndex:0] .= str_replace('\n',"\n",$matches[1]);
+					$translations['translation'][isset($lastIndex)?$lastIndex:0] .= str_replace('\n',"\n",$matches[1]);
 				} else {
 					$delimiter = strpos($matches[1],': ');
 					$this->headers[substr($matches[1],0,$delimiter)] = trim(substr(str_replace('\n',"\n",$matches[1]),$delimiter+2));
 				}
-			} elseif ( $buffer == ''){
-				unset($original,$lastIndex,$comment);
+			} elseif (trim($buffer) == ''){
+				unset($original,$lastIndex,$comment,$context,$translations);
 			}
 		}
 
@@ -166,7 +176,7 @@ class Gettext {
 	 * @param string $path Gettext .mo file path
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/MO-Files.html#MO-Files
-	 * @todo Need review for some advanced features
+	 * @todo Need review for some advanced features (context)
 	 */
 	private function parseMoFile($path){
 		$fp = @fopen($path,'rb');
@@ -187,12 +197,17 @@ class Gettext {
 		$translationIndex = $read(8 * $total, current($read(4,16))); /* Array contain binary position of each translated string */
 
 		for ($i = 0; $i < $total; ++$i) {
-			$original = ($originalIndex[$i * 2 + 1] != 0) ? explode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)), $read($originalIndex[$i * 2 + 1],$originalIndex[$i * 2 + 2],FALSE)) : '';
+			$temp = ($originalIndex[$i * 2 + 1] != 0) ? array_reverse(explode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x04)), $read($originalIndex[$i * 2 + 1],$originalIndex[$i * 2 + 2],FALSE))) : array('0' => '');
+
+			$context = isset($temp[1]) ? $temp[1] : '';
+			$original = explode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)), $temp[0],FALSE);
 			$translation = ($translationIndex[$i * 2 + 1] != 0) ? explode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)), $translation = $read($translationIndex[$i * 2 + 1],$translationIndex[$i * 2 + 2],FALSE)) : "";
 
-			if ($original != "") {
-				$this->translations[is_array($original)? $original[0] : $original]['original'] = $original;
-				$this->translations[is_array($original)? $original[0] : $original]['translation'] = $translation;
+			if ($original[0] != "") {
+				$this->translations[is_array($original)? $original[0] : $original][$context] = array(
+						'original' => $original,
+						'translation' => $translation,
+					);
 			} else {
 				$this->headers = $this->parseMoMetadata(current($translation));
 			}
@@ -230,7 +245,9 @@ class Gettext {
 		$fp = fopen($path,'w');
 		fwrite($fp,  $this->encodeGettxtPoBlock('',implode($this->generateHeaders())));
 		foreach($this->getTranslations() as $data){
-			fwrite($fp,$this->encodeGettxtPoBlock($data['original'],$data['translation']));
+			foreach($data as $context => $block){
+				fwrite($fp,$this->encodeGettxtPoBlock($block['original'],$block['translation'],$context));
+			}
 		}
 		fclose($fp);
 	}
@@ -241,14 +258,16 @@ class Gettext {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param array $original Original untranslated string
 	 * @param array $translations Translation string
+	 * @param string $context Context of translation
 	 * @return string
 	 */
-	private function encodeGettxtPoBlock($original,$translations){
+	private function encodeGettxtPoBlock($original,$translations,$context=''){
 		$original = (array) $original;
 		$translations = (array) $translations;
-
 		$translationsCount = count($translations);
-		$block  = 'msgid "'.current($original).'"'."\n";
+
+		$block  = $context!='' ? 'msgctx "'.$context.'"'."\n" : '';
+		$block .= 'msgid "'.current($original).'"'."\n";
 
 		if(count($original)>1){
 			$block .= 'msgid_plural "'.end($original).'"'."\n";
@@ -271,24 +290,26 @@ class Gettext {
 	 * @return void
 	 */
 	private function generateMoFile($path){
-		$dictionary = $this->getTranslations();
 		$metadata = implode($this->generateHeaders());
-		$items = count($dictionary) + 1;
+		$items = $this->getTranslationsCount() + 1;
 		$strings = $metadata.iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00));
 		$idsOffsets = array(0, 28 + $items * 16);
 		$stringsOffsets = array(array(0, strlen($metadata)));
 		$ids='';
-		foreach ($dictionary as $value) {
-			$id = $value['original'][0];
-			if (is_array($value['original']) && count($value['original']) > 1)
-				$id .= iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)).end($value['original']);
+		foreach ($this->getTranslations() as $translation) {
+			foreach ($translation as $context => $block){
+				$id = $context!='' ? $context.iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x04)).$block['original'][0] : $block['original'][0];
+				if (is_array($block['original']) && count($block['original']) > 1){
+					$id .= iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)).end($block['original']);
+				}
 
-			$string = implode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)), $value['translation']);
-			$idsOffsets[] = strlen($id);
-			$idsOffsets[] = strlen($ids) + 28 + $items * 16;
-			$stringsOffsets[] = array(strlen($strings), strlen($string));
-			$ids .= $id.iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00));
-			$strings .= $string.iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00));
+				$string = implode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00)), $block['translation']);
+				$idsOffsets[] = strlen($id);
+				$idsOffsets[] = strlen($ids) + 28 + $items * 16;
+				$stringsOffsets[] = array(strlen($strings), strlen($string));
+				$ids .= $id.iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00));
+				$strings .= $string.iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N',0x00));
+			}
 		}
 
 		$valuesOffsets = array();
@@ -305,7 +326,6 @@ class Gettext {
 
 		file_put_contents($path, $mo.$ids.$strings);
 	}
-
 
 	/**
 	 * Return headers to store in file
@@ -337,6 +357,21 @@ class Gettext {
 		return $this->translations;
 	}
 
+
+	/**
+	 * How many translations are in dictionary
+	 * Each context variant is counted as one
+	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @return int
+	 */
+	private function getTranslationsCount(){
+		$count = 0;
+		foreach ($this->getTranslations() as $translation){
+			$count += count($translation);
+		}
+		return $count;
+	}
+
 	/**
 	 * Set default dictionary header
 	 * @author Pavel Železný <info™pavelzelezny.cz>
@@ -362,28 +397,34 @@ class Gettext {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string|array $original
 	 * @param string|array $translation
+	 * @param string $context
 	 * @return void
 	 * @throw \BadMethodCallException
 	 */
-	public function setTranslation($original,$translation){
+	public function setTranslation($original,$translation=NULL,$context=''){
 		if((is_array($translation)===TRUE)&&((count($original) < 2)||(is_array($original)===FALSE))){
 		    throw new \BadMethodCallException('Translation with plurals need to have plural definition.');
 		} elseif ($original==''){
 			throw new \BadMethodCallException('Untranslated string cannot be empty.');
+		} elseif (is_string($context)===FALSE){
+			throw new \BadMethodCallException('Context have to be string.');
 		}
 
-		$this->translations[is_array($original) ? $original[0] : $original]['original'] = is_array($original) ? array_values($original) : array('0' => $original);
-		$this->translations[is_array($original) ? $original[0] : $original]['translation'] = is_array($translation) ? array_values($translation) : array('0' => $translation);
+		$this->translations[is_array($original) ? $original[0] : $original][$context]['original'] = is_array($original) ? array_values($original) : array('0' => $original);
+		$this->translations[is_array($original) ? $original[0] : $original][$context]['translation'] = is_array($translation) ? array_values($translation) : array('0' => $translation);
 	}
 
 	/**
 	 * Remove unwanted translation
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $original
+	 * @param string $context if NULL, remove whole translation otherwise remove defined context
 	 * @return void
 	 */
-	public function removeTranslation($original){
-		if(isset($this->translations[$original])){
+	public function removeTranslation($original,$context=NULL){
+		if(($context!=NULL)&&(isset($this->translations[$original][$context]))){
+			unset($this->translations[$original][$context]);
+		} elseif (($context===NULL)&&(isset($this->translations[$original]))){
 			unset($this->translations[$original]);
 		}
 
