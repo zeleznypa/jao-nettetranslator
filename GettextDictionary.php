@@ -43,24 +43,28 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext dictionary file path
 	 * @return \Gettext  provides a fluent interface
-	 * @throws \InvalidArgumentException
+	 * @throws \InvalidArgumentException \BadMethodCallException
 	 */
 	public function loadDictionary($path){
 		if($this->getTranslationsCount() == 0){
 			if((file_exists($path))&&(is_readable($path))){
-				switch (pathinfo($path,PATHINFO_EXTENSION)) {
-					case 'mo':
-						if(filesize($path)>10){
-							return $this->parseMoFile(basename($path));
-						} else {
-							throw new \InvalidArgumentException('Dictionary file is not .mo compatible');
-						}
-						break;
-					case 'po':
-						return $this->parsePoFile(basename($path));
-						break;
-					default:
-						throw new \InvalidArgumentException('Unsupported file type');
+				try{
+					switch (pathinfo($path,PATHINFO_EXTENSION)) {
+						case 'mo':
+							if(filesize($path)>10){
+								return $this->parseMoFile(basename($path));
+							} else {
+								throw new \InvalidArgumentException('Dictionary file is not .mo compatible');
+							}
+							break;
+						case 'po':
+							return $this->parsePoFile(basename($path));
+							break;
+						default:
+							throw new \InvalidArgumentException('Unsupported file type');
+					}
+				} catch (\BadMethodCallException $exception){
+					throw new \BadMethodCallException('Dictionary file structure is not correct.',0,$exception);
 				}
 			} else {
 				throw new \InvalidArgumentException('Dictionary file is not exist or is not readable');
@@ -103,6 +107,7 @@ class GettextDictionary {
 	 * @param string $path Gettext .po file path
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/PO-Files.html#PO-Files
+	 * @throws \BadMethodCallException
 	 */
 	private function parsePoFile($path){
 		$fp = @fopen($path, 'r');
@@ -170,6 +175,7 @@ class GettextDictionary {
 	 * @param string $path Gettext .mo file path
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/MO-Files.html#MO-Files
+	 * @throws \BadMethodCallException
 	 */
 	private function parseMoFile($path){
 		$fp = @fopen($path,'rb');
@@ -442,7 +448,7 @@ class GettextDictionary {
 	 * @param string $context
 	 * @param string|array $translation
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throw \BadMethodCallException
+	 * @throws \BadMethodCallException
 	 */
 	public function addOriginal($original,$context='',$translation=NULL){
 		if(((is_array($translation)===TRUE)&&(count($translation) > 1))&&((count($original) < 2)||(is_array($original)===FALSE))){
@@ -464,7 +470,7 @@ class GettextDictionary {
 	 * @param string|array $original
 	 * @param string $context
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throw \BadMethodCallException
+	 * @throws \BadMethodCallException
 	 */
 	public function getOriginal($original,$context=''){
 		if(!isset($this->translations[is_array($original) ? $original[0] : $original][$context])){
@@ -480,7 +486,7 @@ class GettextDictionary {
 	 * @param string|array $original
 	 * @param string $context
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throw \BadMethodCallException
+	 * @throws \BadMethodCallException
 	 */
 	public function getTranslation($original,$context=''){
 		return $this->getOriginal($original, $context);

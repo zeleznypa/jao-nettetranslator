@@ -127,7 +127,7 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string|array $original  singular and optionaly plural form of orginal untranslated string
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throw \BadMethodCallException
+	 * @throws \BadMethodCallException
 	 */
 	protected function setOriginal($original){
 		if (trim(is_array($original) ? $original[0] : $original) == ''){
@@ -144,7 +144,7 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $original  context of untranslated string
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throw \BadMethodCallException
+	 * @throws \BadMethodCallException
 	 */
 	public function setContext($context){
 		if (is_string($context)===FALSE){
@@ -175,7 +175,7 @@ class GettextTranslation {
 	 * @param string|array $translation  singular and optionaly plural form of translated string
 	 * @param string $index  optionaly we can set index of plural
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throw \BadMethodCallException
+	 * @throws \BadMethodCallException
 	 */
 	public function setTranslation($translation,$index=0){
 		if(is_string($translation)===FALSE){
@@ -194,7 +194,7 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param array $comments key mean type and value mean text of comment
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throw \BadMethodCallException
+	 * @throws \BadMethodCallException
 	 */
 	public function setComments($comments){
 		foreach($comments as $type => $comment){
@@ -209,7 +209,7 @@ class GettextTranslation {
 	 * @param string $type type of comment
 	 * @param string $comment text of comment
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throw \BadMethodCallException
+	 * @throws \BadMethodCallException
 	 */
 	public function setComment($type,$comment){
 		if(in_array($type, $this->getAllowedCommentTypes()) === FALSE){
@@ -224,7 +224,7 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $plural  plural form of untranslated string
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throw \BadMethodCallException
+	 * @throws \BadMethodCallException
 	 */
 	public function setPlural($plural){
 		if(count($this->original)==0){
