@@ -389,20 +389,47 @@ class GettextDictionary {
 	}
 
 	/**
+	 * Set default dictionary headers
+	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param array $headers
+	 * @return void
+	 */
+	public function setDefaultHeaders($headers){
+		foreach ($headers as $index => $value){
+			$this->setdefaultHeaders($index,$value);
+		}
+	}
+
+	/**
 	 * Set default dictionary header
-	 * @author Pavel Železný <info™pavelzelezny.cz>
+	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $index
 	 * @param string $value
+	 * @return void
 	 */
 	public function setDefaultHeader($index,$value){
 		$this->defaultHeaders[$index] = $value;
 	}
 
 	/**
+	 * Set dictionary headers
+	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param array $headers
+	 * @return void
+	 */
+	public function setHeaders($headers){
+		foreach($headers as $index=>$value){
+			$this->setHeader($index, $value);
+		}
+	}
+
+
+	/**
 	 * Set dictionary header
-	 * @author Pavel Železný <info™pavelzelezny.cz>
+	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $index
 	 * @param string $value
+	 * @return void
 	 */
 	public function setHeader($index,$value){
 		$this->headers[$index] = $value;

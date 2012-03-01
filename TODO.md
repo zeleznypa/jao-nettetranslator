@@ -5,7 +5,6 @@ Pavel Železný (2bfree), 2012 ([www.pavelzelezny.cz](http://www.pavelzelezny.cz
 
 ## Minor ##
 
-- Set GettextDictionary headers by array
 - Move encodeGettxtPoBlock method to GettextTranslation class
 
 ## Big fetutre ##
