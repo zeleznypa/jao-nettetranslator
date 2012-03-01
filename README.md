@@ -15,62 +15,70 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 
 ### 1) Load dictionary from .po file ###
 
-	$gettext = new Gettext();
-	$gettext->loadDictionary('./dictionary.po');
-	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($gettext->getTranslations(),true));
+	$dictionary = new GettextDictionary();
+	$dictionary->loadDictionary('./dictionary.po');
+	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
 
 
 ### 2) Alternative loading dictionary from .po file ###
 
-	$gettext = new Gettext('./dictionary.po');
-	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($gettext->getTranslations(),true));
+	$dictionary = new GettextDictionary('./dictionary.po');
+	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
 
 
 ### 3) Load dictionary from .mo file ###
 
-	$gettext = new Gettext();
-	$gettext->loadDictionary('./dictionary.mo');
-	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($gettext->getTranslations(),true));
+	$dictionary = new GettextDictionary();
+	$dictionary->loadDictionary('./dictionary.mo');
+	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
 
 
 ### 4) Alternative loading dictionary from .mo file ###
 
-	$gettext = new Gettext('./dictionary.mo');
-	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($gettext->getTranslations(),true));
+	$dictionary = new GettextDictionary('./dictionary.mo');
+	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
 
 
 ### 5) Generating new dictionary ###
 
-	$gettext = new Gettext();
+	$dictionary = new GettextDictionary();
 
 	// Setting optional but basic headers.
-	$gettext->setHeader('Project-Id-Version','Test dictionary 1.0');
-	$gettext->setHeader('Language-Team','Elite translator monkeys');
-	$gettext->setHeader('Plural-Forms','nplurals=3; plural=(n==1)? 0 : (n>=2 && n<=4)? 1 : 2;');
-	$gettext->setHeader('Last-Translator','JAO NetteTranslator');
-	$gettext->setHeader('X-Poedit-Language','Czech');
+	$dictionary->setHeader('Project-Id-Version','Test dictionary 1.0');
+	$dictionary->setHeader('Language-Team','Elite translator monkeys');
+	$dictionary->setHeader('Plural-Forms','nplurals=3; plural=(n==1)? 0 : (n>=2 && n<=4)? 1 : 2;');
+	$dictionary->setHeader('Last-Translator','JAO NetteTranslator');
+	$dictionary->setHeader('X-Poedit-Language','Czech');
+
+	// Set simple untranslated string for translator team
+	$dictionary->addOriginal('Translate this please');
 
 	// Set simple translation without plurals
-	$gettext->setTranslation('Translation team','Překladatelský team');
+	$dictionary->addOriginal('Translation team')->setTranslation('Překladatelský team');
 
-	// Set translation with plurals
-	$gettext->setTranslation(array('%s monkey','%s monkeys'),array('%s opice','%s opičky','%s opiček'));
+	// Set translation with plurals (most complicated way)
+	$dictionary->addOriginal('%s monkey')->setPlural('%s monkeys')->setTranslation('%s opice',0)->setTranslation('%s opičky',1)->setTranslation('%s opiček',2);
 
-	// Set untranslated string for translator team
-	$gettext->setTranslation('Translate this please');
+	// Set Translation with plurals easier
+	$dictionary->addOriginal(array('%s dog','%s dogs'))->setTranslations(array('%s pes','%s psi','%s psů'));
 
 	// Set same translation with another context
 	// Many apps have problems with context or multiple same untranslated strings
-	$gettext->setTranslation('New','Nový','New man');
-	$gettext->setTranslation('New','Nová','New woman');
+	$dictionary->addOriginal('New','New man')->setTranslation('Nový');
+	$dictionary->addOriginal('New','New woman')->setTranslation('Nová');
+
+	// Easiest way to define translation
+	$dictionary->addOriginal('Cat','','Kočka'); //simple
+	$dictionary->addOriginal('Cat','Beautifull woman','Kočička'); // another context
+	$dictionary->addOriginal(array('%s cat','%s cats'),'',array('%s kočka','%s kočky','%s koček')); // with plurals
 
 	// Optional show content of dictionary
-	printf("<h2>Headers:</h2><pre>%s</pre>",print_r($gettext->getHeaders(),true));
-	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($gettext->getTranslations(),true));
+	printf("<h2>Headers:</h2><pre>%s</pre>",print_r($dictionary->getHeaders(),true));
+	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
 
 	// Save dictionary
-	$gettext->saveDictionary('./dictionary.po');
-	$gettext->saveDictionary('./dictionary.mo');
+	$dictionary->saveDictionary('./dictionary.po');
+	$dictionary->saveDictionary('./dictionary.mo');
 
 ### 6) Discussion ###
 When you need to discuss, write in [Nette forum](http://forum.nette.org/cs/10020-jao-nettetranslator-translatorpanel-jinak-a-mozna-nekdy-i-lepe) in czech or english language.
