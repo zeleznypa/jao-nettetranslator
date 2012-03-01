@@ -76,6 +76,26 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 	printf("<h2>Headers:</h2><pre>%s</pre>",print_r($dictionary->getHeaders(),true));
 	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
 
+	// There is also support for adding many types of comments
+	$dictionary->getOriginal('Translate this please')->setComment('comment','translator-comments');
+	$dictionary->getOriginal('Translate this please')->setComment('extracted-comment','extracted-comments');
+	$dictionary->getOriginal('Translate this please')->setComment('reference','reference...');
+	$dictionary->getOriginal('Translate this please')->setComment('flag','flag...');
+	$dictionary->getOriginal('Translate this please')->setComment('previous-context','previous-context');
+	$dictionary->getOriginal('Translate this please')->setComment('previous-untranslated-string','previous-untranslated-string');
+
+	// Comments can be set by array
+	$dictionary->getOriginal('test')->setComments(
+		array(
+			'comment'                      => 'translator-comments',
+			'extracted-comment'            => 'extracted-comments',
+			'reference'                    => 'reference...',
+			'flag'                         => 'flag...',
+			'previous-context'             => 'previous-context',
+			'previous-untranslated-string' => 'previous-untranslated-string',
+		)
+	);
+
 	// Save dictionary
 	$dictionary->saveDictionary('./dictionary.po');
 	$dictionary->saveDictionary('./dictionary.mo');
