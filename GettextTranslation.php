@@ -114,6 +114,7 @@ class GettextTranslation {
 	private function getAllowedCommentTypes(){
 		return array(
 			'comment',
+			'extracted-comment',
 			'reference',
 			'flag',
 			'previous-context',

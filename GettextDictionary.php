@@ -109,10 +109,13 @@ class GettextDictionary {
 
 		while(feof($fp)!=TRUE){
 			$buffer = fgets($fp);
-			if(preg_match('/^#([.:,]|(\| msgctxt)|(\| msgid)) (.*)$/', $buffer,$matches)){
+			if(preg_match('/^#([.:, ]|(\| msgctxt)|(\| msgid)) (.*)$/', $buffer,$matches)){
 				switch ($matches[1]){
-					case '.':
+					case ' ':
 						$comments['comment'] = $matches[4];
+						break;
+					case '.':
+						$comments['extracted-comment'] = $matches[4];
 						break;
 					case ':':
 						$comments['reference'] = $matches[4];
@@ -233,7 +236,7 @@ class GettextDictionary {
 		fwrite($fp,  $this->encodeGettxtPoBlock('',implode($this->generateHeaders())));
 		foreach($this->getTranslations() as $data){
 			foreach($data as $context => $object){
-				fwrite($fp,$this->encodeGettxtPoBlock($object->getOriginal(),$object->getTranslations(),$context));
+				fwrite($fp,$this->encodeGettxtPoBlock($object->getOriginal(),$context,$object->getTranslations(),$object->getComments()));
 			}
 		}
 		fclose($fp);
@@ -244,17 +247,41 @@ class GettextDictionary {
 	 * Encode one translation to .po gettext file
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param array $original Original untranslated string
-	 * @param array $translations Translation string
 	 * @param string $context Context of translation
+	 * @param array $translations Translation strings
+	 * @param array $comments Comments
 	 * @return string
-	 * @todo add comments support
 	 */
-	private function encodeGettxtPoBlock($original,$translations,$context=''){
+	private function encodeGettxtPoBlock($original,$translations,$context='',$comments=array()){
 		$original = (array) $original;
 		$translations = (array) $translations;
 		$translationsCount = count($translations);
 
-		$block  = $context!='' ? 'msgctx "'.$context.'"'."\n" : '';
+		$block = '';
+		foreach($comments as $type => $comment){
+			switch ($type){
+				case 'comment':
+					$block .= '#  '.$comment."\n";
+					break;
+				case 'extracted-comment':
+					$block .= '#. '.$comment."\n";
+					break;
+				case 'reference':
+					$block .= '#: '.$comment."\n";
+					break;
+				case 'flag':
+					$block .= '#, '.$comment."\n";
+					break;
+				case 'previous-context':
+					$block .= '#| msgctxt '.$comment."\n";
+					break;
+				case 'previous-untranslated-string':
+					$block .= '#| msgid '.$comment."\n";
+					break;
+			}
+		}
+
+		$block .= $context!='' ? 'msgctx "'.$context.'"'."\n" : '';
 		$block .= 'msgid "'.current($original).'"'."\n";
 
 		if(count($original)>1){
