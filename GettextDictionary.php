@@ -36,11 +36,11 @@ class GettextDictionary {
 	 */
 	public function __construct($path = NULL) {
 		if ($path !== NULL) {
-			$this -> loadDictionary($path);
+			$this->loadDictionary($path);
 		}
 
-		$this -> setDefaultHeader('POT-Creation-Date', date("Y-m-d H:iO"));
-		$this -> setDefaultHeader('PO-Revision-Date', date("Y-m-d H:iO"));
+		$this->setDefaultHeader('POT-Creation-Date', date("Y-m-d H:iO"));
+		$this->setDefaultHeader('PO-Revision-Date', date("Y-m-d H:iO"));
 	}
 
 	/**
@@ -51,19 +51,19 @@ class GettextDictionary {
 	 * @throws \InvalidArgumentException \BadMethodCallException
 	 */
 	public function loadDictionary($path) {
-		if ($this -> getTranslationsCount() == 0) {
+		if ($this->getTranslationsCount() == 0) {
 			if ((file_exists($path)) && (is_readable($path))) {
 				try {
 					switch (pathinfo($path, PATHINFO_EXTENSION)) {
 						case 'mo':
 							if (filesize($path) > 10) {
-								return $this -> parseMoFile(basename($path));
+								return $this->parseMoFile(basename($path));
 							} else {
 								throw new \InvalidArgumentException('Dictionary file is not .mo compatible');
 							}
 							break;
 						case 'po':
-							return $this -> parsePoFile(basename($path));
+							return $this->parsePoFile(basename($path));
 							break;
 						default:
 							throw new \InvalidArgumentException('Unsupported file type');
@@ -88,15 +88,15 @@ class GettextDictionary {
 	 */
 	public function saveDictionary($path) {
 		// Force datetime change of newly generated dictionary
-		$this -> setHeader('PO-Revision-Date', date("Y-m-d H:iO"));
+		$this->setHeader('PO-Revision-Date', date("Y-m-d H:iO"));
 
 		if (((file_exists($path) === TRUE) && (is_writable($path))) || ((file_exists($path) === FALSE) && (is_writable(dirname($path))))) {
 			switch (pathinfo($path, PATHINFO_EXTENSION)) {
 				case 'mo':
-					return $this -> generateMoFile($path);
+					return $this->generateMoFile($path);
 					break;
 				case 'po':
-					return $this -> generatePoFile($path);
+					return $this->generatePoFile($path);
 					break;
 				default:
 					throw new \InvalidArgumentException('Unsupported file type');
@@ -145,24 +145,24 @@ class GettextDictionary {
 			} elseif (preg_match('/^msgid "(.*)"$/', $buffer, $matches)) {
 				$original = $matches[1];
 				if ($matches[1] != '') {
-					$translations = & $this -> addOriginal($original, isset($context) ? $context : '');
+					$translations = & $this->addOriginal($original, isset($context) ? $context : '');
 					if (isset($comments)) {
-						$translations -> setComments($comments);
+						$translations->setComments($comments);
 					}
 				}
 			} elseif (preg_match('/^msgid_plural "(.*)"$/', $buffer, $matches)) {
-				$translations -> setPlural($matches[1]);
+				$translations->setPlural($matches[1]);
 			} elseif ((preg_match('/^msgstr "(.*)"$/', $buffer, $matches)) && ($original != '')) {
-				$translations -> setTranslation(str_replace('\n', "\n", $matches[1]), 0);
+				$translations->setTranslation(str_replace('\n', "\n", $matches[1]), 0);
 			} elseif ((preg_match('/^msgstr\[([0-9]+)\] "(.*)"$/', $buffer, $matches)) && ($original[0] != '')) {
 				$lastIndex = (int) $matches[1];
-				$translations -> setTranslation(str_replace('\n', "\n", $matches[2]), $lastIndex);
+				$translations->setTranslation(str_replace('\n', "\n", $matches[2]), $lastIndex);
 			} elseif (preg_match('/^"(.*)"$/', $buffer, $matches)) {
 				if ((isset($original)) && ($original != '')) {
-					$translations -> setTranslation($translations -> getTranslation(isset($lastIndex) ? $lastIndex : 0) . str_replace('\n', "\n", $matches[1]), isset($lastIndex) ? $lastIndex : 0);
+					$translations->setTranslation($translations->getTranslation(isset($lastIndex) ? $lastIndex : 0) . str_replace('\n', "\n", $matches[1]), isset($lastIndex) ? $lastIndex : 0);
 				} else {
 					$delimiter = strpos($matches[1], ': ');
-					$this -> headers[substr($matches[1], 0, $delimiter)] = trim(substr(str_replace('\n', "\n", $matches[1]), $delimiter + 2));
+					$this->headers[substr($matches[1], 0, $delimiter)] = trim(substr(str_replace('\n', "\n", $matches[1]), $delimiter + 2));
 				}
 			} elseif (trim($buffer) == '') {
 				unset($comments, $original, $lastIndex, $comment, $context, $translations);
@@ -207,9 +207,9 @@ class GettextDictionary {
 			$translation = ($translationIndex[$i * 2 + 1] != 0) ? explode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)), $translation = $read($translationIndex[$i * 2 + 1], $translationIndex[$i * 2 + 2], FALSE)) : NULL;
 
 			if ($original[0] != "") {
-				$this -> addOriginal($original, $context, $translation);
+				$this->addOriginal($original, $context, $translation);
 			} else {
-				$this -> headers = $this -> parseMoMetadata(current($translation));
+				$this->headers = $this->parseMoMetadata(current($translation));
 			}
 		}
 		fclose($fp);
@@ -243,10 +243,10 @@ class GettextDictionary {
 	 */
 	private function generatePoFile($path) {
 		$fp = fopen($path, 'w');
-		fwrite($fp, $this -> encodeGettxtPoBlock('', implode($this -> generateHeaders())));
-		foreach ($this -> getTranslations() as $data) {
+		fwrite($fp, $this->encodeGettxtPoBlock('', implode($this->generateHeaders())));
+		foreach ($this->getTranslations() as $data) {
 			foreach ($data as $context => $object) {
-				fwrite($fp, $this -> encodeGettxtPoBlock($object -> getOriginal(), $context, $object -> getTranslations(), $object -> getComments()));
+				fwrite($fp, $this->encodeGettxtPoBlock($object->getOriginal(), $context, $object->getTranslations(), $object->getComments()));
 			}
 		}
 		fclose($fp);
@@ -314,21 +314,21 @@ class GettextDictionary {
 	 * @return void
 	 */
 	private function generateMoFile($path) {
-		$metadata = implode($this -> generateHeaders());
-		$items = $this -> getTranslationsCount() + 1;
+		$metadata = implode($this->generateHeaders());
+		$items = $this->getTranslationsCount() + 1;
 		$strings = $metadata . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00));
 		$idsOffsets = array(0, 28 + $items * 16);
 		$stringsOffsets = array(array(0, strlen($metadata)));
 		$ids = '';
-		foreach ($this -> getTranslations() as $translation) {
+		foreach ($this->getTranslations() as $translation) {
 			foreach ($translation as $context => $object) {
-				$original = $object -> getOriginal();
+				$original = $object->getOriginal();
 				$id = $context != '' ? $context . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x04)) . $original[0] : $original[0];
 				if (count($original) > 1) {
 					$id .= iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)) . end($original);
 				}
 
-				$string = implode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)), $object -> getTranslations());
+				$string = implode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)), $object->getTranslations());
 				$idsOffsets[] = strlen($id);
 				$idsOffsets[] = strlen($ids) + 28 + $items * 16;
 				$stringsOffsets[] = array(strlen($strings), strlen($string));
@@ -358,7 +358,7 @@ class GettextDictionary {
 	 * @return array
 	 */
 	private function generateHeaders() {
-		foreach ($this -> getHeaders() as $key => $val) {
+		foreach ($this->getHeaders() as $key => $val) {
 			$headers[] = $key . ': ' . $val . "\n";
 		}
 		return $headers;
@@ -370,7 +370,7 @@ class GettextDictionary {
 	 * @return array
 	 */
 	public function getHeaders() {
-		return array_merge($this -> defaultHeaders, $this -> headers);
+		return array_merge($this->defaultHeaders, $this->headers);
 	}
 
 	/**
@@ -379,7 +379,7 @@ class GettextDictionary {
 	 * @return array
 	 */
 	public function getTranslations() {
-		return $this -> translations;
+		return $this->translations;
 	}
 
 	/**
@@ -390,7 +390,7 @@ class GettextDictionary {
 	 */
 	private function getTranslationsCount() {
 		$count = 0;
-		foreach ($this -> getTranslations() as $translation) {
+		foreach ($this->getTranslations() as $translation) {
 			$count += count($translation);
 		}
 		return $count;
@@ -404,7 +404,7 @@ class GettextDictionary {
 	 */
 	public function setDefaultHeaders($headers) {
 		foreach ($headers as $index => $value) {
-			$this -> setdefaultHeaders($index, $value);
+			$this->setdefaultHeaders($index, $value);
 		}
 	}
 
@@ -416,7 +416,7 @@ class GettextDictionary {
 	 * @return void
 	 */
 	public function setDefaultHeader($index, $value) {
-		$this -> defaultHeaders[$index] = $value;
+		$this->defaultHeaders[$index] = $value;
 	}
 
 	/**
@@ -427,7 +427,7 @@ class GettextDictionary {
 	 */
 	public function setHeaders($headers) {
 		foreach ($headers as $index => $value) {
-			$this -> setHeader($index, $value);
+			$this->setHeader($index, $value);
 		}
 	}
 
@@ -439,7 +439,7 @@ class GettextDictionary {
 	 * @return void
 	 */
 	public function setHeader($index, $value) {
-		$this -> headers[$index] = $value;
+		$this->headers[$index] = $value;
 	}
 
 	/**
@@ -458,11 +458,11 @@ class GettextDictionary {
 			throw new \BadMethodCallException('Untranslated string cannot be empty.');
 		} elseif (is_string($context) === FALSE) {
 			throw new \BadMethodCallException('Context have to be string.');
-		} elseif (isset($this -> translations[is_array($original) ? $original[0] : $original][$context])) {
+		} elseif (isset($this->translations[is_array($original) ? $original[0] : $original][$context])) {
 			throw new \BadMethodCallException('Same defined original is exist.');
 		}
 
-		return $this -> translations[is_array($original) ? $original[0] : $original][$context] = new GettextTranslation($original, $context, $translation);
+		return $this->translations[is_array($original) ? $original[0] : $original][$context] = new GettextTranslation($original, $context, $translation);
 	}
 
 	/**
@@ -474,11 +474,11 @@ class GettextDictionary {
 	 * @throws \BadMethodCallException
 	 */
 	public function getOriginal($original, $context = '') {
-		if (!isset($this -> translations[is_array($original) ? $original[0] : $original][$context])) {
+		if (!isset($this->translations[is_array($original) ? $original[0] : $original][$context])) {
 			throw new \BadMethodCallException('Required original is not exist.');
 		}
 
-		return $this -> translations[is_array($original) ? $original[0] : $original][$context];
+		return $this->translations[is_array($original) ? $original[0] : $original][$context];
 	}
 
 	/**
@@ -490,7 +490,7 @@ class GettextDictionary {
 	 * @throws \BadMethodCallException
 	 */
 	public function getTranslation($original, $context = '') {
-		return $this -> getOriginal($original, $context);
+		return $this->getOriginal($original, $context);
 	}
 
 	/**
@@ -501,10 +501,10 @@ class GettextDictionary {
 	 * @return void
 	 */
 	public function removeTranslation($original, $context = NULL) {
-		if (($context != NULL) && (isset($this -> translations[$original][$context]))) {
-			unset($this -> translations[$original][$context]);
-		} elseif (($context === NULL) && (isset($this -> translations[$original]))) {
-			unset($this -> translations[$original]);
+		if (($context != NULL) && (isset($this->translations[$original][$context]))) {
+			unset($this->translations[$original][$context]);
+		} elseif (($context === NULL) && (isset($this->translations[$original]))) {
+			unset($this->translations[$original]);
 		}
 	}
 
