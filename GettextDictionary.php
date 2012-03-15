@@ -6,7 +6,7 @@
  */
 class GettextDictionary {
 
-	/** @var array * */
+	/** @var array */
 	private $defaultHeaders = array(
 		'Project-Id-Version' => '',
 		'POT-Creation-Date' => '', // default value is set in constructor
@@ -19,13 +19,13 @@ class GettextDictionary {
 		'Last-Translator' => 'JAO NetteTranslator',
 	);
 
-	/** @var array * */
+	/** @var array */
 	private $files = array();
 
-	/** @var array * */
+	/** @var array */
 	private $headers = array();
 
-	/** @var array * */
+	/** @var array */
 	private $translations = array();
 
 	/**
@@ -33,6 +33,7 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Optional gettext dictionary file path
 	 * @return void
+	 * @todo Optionaly dictionary identifier can be set
 	 */
 	public function __construct($path = NULL) {
 		if ($path !== NULL) {
@@ -49,6 +50,9 @@ class GettextDictionary {
 	 * @param string $path Gettext dictionary file path
 	 * @return \Gettext  provides a fluent interface
 	 * @throws \InvalidArgumentException \BadMethodCallException
+	 * @todo Add info about loaded file into $this->files property
+	 * @todo Change logic of force loading more than one file
+	 * @todo Optionaly dictionary identifier can be set
 	 */
 	public function loadDictionary($path) {
 		if ($this->getTranslationsCount() == 0) {
@@ -85,6 +89,7 @@ class GettextDictionary {
 	 * @param string $path Gettext dictionary file path
 	 * @return \Gettext  provides a fluent interface
 	 * @throws \InvalidArgumentException
+	 * @todo Optionaly dictionary identifier can be set otherwise new data will be saved
 	 */
 	public function saveDictionary($path) {
 		// Force datetime change of newly generated dictionary
@@ -113,6 +118,7 @@ class GettextDictionary {
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/PO-Files.html#PO-Files
 	 * @throws \BadMethodCallException
+	 * @todo index of file is automaticaly given from $this->files property
 	 */
 	private function parsePoFile($path) {
 		$fp = @fopen($path, 'r');
@@ -180,6 +186,7 @@ class GettextDictionary {
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/MO-Files.html#MO-Files
 	 * @throws \BadMethodCallException
+	 * @todo index of file is automaticaly givven from $this->files property
 	 */
 	private function parseMoFile($path) {
 		$fp = @fopen($path, 'rb');
@@ -240,6 +247,7 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext .po file path
 	 * @return void
+	 * @todo Optionaly dictionary identifier can be set otherwise new data will be saved
 	 */
 	private function generatePoFile($path) {
 		$fp = fopen($path, 'w');
@@ -312,6 +320,7 @@ class GettextDictionary {
 	 * @author Don't know who is first autor but my source is https://github.com/marten-cz/NetteTranslator
 	 * @param string $path Gettext .mo file path
 	 * @return void
+	 * @todo Optionaly dictionary identifier can be set otherwise new data will be saved
 	 */
 	private function generateMoFile($path) {
 		$metadata = implode($this->generateHeaders());
@@ -368,6 +377,7 @@ class GettextDictionary {
 	 * Return dictionary headers
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @return array
+	 * @todo Optionaly dictionary identifier can be set otherwise header for new data will be returned
 	 */
 	public function getHeaders() {
 		return array_merge($this->defaultHeaders, $this->headers);
@@ -377,6 +387,7 @@ class GettextDictionary {
 	 * Return dictionary translation objects
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @return array
+	 * @todo Optionaly dictionary identifier can be set otherwise all translations will be returned
 	 */
 	public function getTranslations() {
 		return $this->translations;
@@ -387,6 +398,7 @@ class GettextDictionary {
 	 * Each context variant is counted as one
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @return int
+	 * @todo Optionaly dictionary identifier can be set otherwise all translations count will be returned
 	 */
 	private function getTranslationsCount() {
 		$count = 0;
@@ -401,6 +413,8 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param array $headers
 	 * @return void
+	 * @todo Optionaly dictionary identifier can be set otherwise new dictionary headers will be set
+	 * @todo Investigate posibility of fluent interface here
 	 */
 	public function setDefaultHeaders($headers) {
 		foreach ($headers as $index => $value) {
@@ -414,6 +428,8 @@ class GettextDictionary {
 	 * @param string $index
 	 * @param string $value
 	 * @return void
+	 * @todo Optionaly dictionary identifier can be set otherwise new dictionary headers will be set
+	 * @todo Investigate posibility of fluent interface here
 	 */
 	public function setDefaultHeader($index, $value) {
 		$this->defaultHeaders[$index] = $value;
@@ -424,6 +440,8 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param array $headers
 	 * @return void
+	 * @todo Optionaly dictionary identifier can be set otherwise new dictionary headers will be set
+	 * @todo Investigate posibility of fluent interface here
 	 */
 	public function setHeaders($headers) {
 		foreach ($headers as $index => $value) {
@@ -437,6 +455,8 @@ class GettextDictionary {
 	 * @param string $index
 	 * @param string $value
 	 * @return void
+	 * @todo Optionaly dictionary identifier can be set otherwise new dictionary header will be set
+	 * @todo Investigate posibility of fluent interface here
 	 */
 	public function setHeader($index, $value) {
 		$this->headers[$index] = $value;
@@ -450,6 +470,7 @@ class GettextDictionary {
 	 * @param string|array $translation
 	 * @return \GettextTranslation  provides a fluent interface
 	 * @throws \BadMethodCallException
+	 * @todo Optionaly dictionary identifier can be set otherwise new dictionary original will be set
 	 */
 	public function addOriginal($original, $context = '', $translation = NULL) {
 		if (((is_array($translation) === TRUE) && (count($translation) > 1)) && ((count($original) < 2) || (is_array($original) === FALSE))) {
@@ -472,6 +493,7 @@ class GettextDictionary {
 	 * @param string $context
 	 * @return \GettextTranslation  provides a fluent interface
 	 * @throws \BadMethodCallException
+	 * @todo Optionaly dictionary identifier can be set otherwise get original from all dictionaries
 	 */
 	public function getOriginal($original, $context = '') {
 		if (!isset($this->translations[is_array($original) ? $original[0] : $original][$context])) {
@@ -488,6 +510,7 @@ class GettextDictionary {
 	 * @param string $context
 	 * @return \GettextTranslation  provides a fluent interface
 	 * @throws \BadMethodCallException
+	 * @todo Optionaly dictionary identifier can be set otherwise get original from all dictionaries
 	 */
 	public function getTranslation($original, $context = '') {
 		return $this->getOriginal($original, $context);
@@ -499,6 +522,7 @@ class GettextDictionary {
 	 * @param string $original
 	 * @param string $context if NULL, remove whole translation otherwise remove defined context
 	 * @return void
+	 * @todo Optionaly dictionary identifier can be set otherwise remove original from new dictionary
 	 */
 	public function removeTranslation($original, $context = NULL) {
 		if (($context != NULL) && (isset($this->translations[$original][$context]))) {
