@@ -85,7 +85,7 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 	$dictionary->getOriginal('Translate this please')->setComment('previous-untranslated-string','previous-untranslated-string');
 
 	// Comments can be set by array
-	$dictionary->getOriginal('test')->setComments(
+	$dictionary->getOriginal('Translate this please')->setComments(
 		array(
 			'comment'                      => 'translator-comments',
 			'extracted-comment'            => 'extracted-comments',
