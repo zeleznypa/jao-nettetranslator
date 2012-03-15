@@ -600,7 +600,7 @@ class GettextDictionary {
 	private function generateDictionaryFileIdentifier($path) {
 		$type = pathinfo($path, PATHINFO_EXTENSION);
 		$identifier = strtolower(basename($path, $type));
-		$possibleId = $this->generateDictionaryFileIdentifier($identifier);
+		$possibleId = $this->getDictionaryFileId($identifier);
 		if (($possibleId === FALSE) || (($type == 'mo') && ($this->files[$possibleId]['mobileObject'] === FALSE) && ($this->colaborativeMode === TRUE)) || (($type == 'po') && ($this->files[$possibleId]['mobileObject'] === FALSE) && ($this->colaborativeMode === TRUE))) {
 			return $identifier;
 		} else {
