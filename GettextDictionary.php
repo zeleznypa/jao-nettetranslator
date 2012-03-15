@@ -28,6 +28,9 @@ class GettextDictionary {
 	/** @var array */
 	private $translations = array();
 
+	/** @var bool */
+	private $colaborativeMode = FALSE;
+
 	/**
 	 * Constructor
 	 * @author Pavel Železný <info@pavelzelezny.cz>
@@ -54,24 +57,27 @@ class GettextDictionary {
 	 * @todo Change logic of force loading more than one file
 	 * @todo Optionaly dictionary identifier can be set
 	 */
-	public function loadDictionary($path) {
+	public function loadDictionary($path, $identifier = NULL) {
 		if ($this->getTranslationsCount() == 0) {
 			if ((file_exists($path)) && (is_readable($path))) {
 				try {
 					switch (pathinfo($path, PATHINFO_EXTENSION)) {
 						case 'mo':
 							if (filesize($path) > 10) {
+								$this->setDictionaryFileId($path, $identifier);
 								return $this->parseMoFile(basename($path));
 							} else {
 								throw new \InvalidArgumentException('Dictionary file is not .mo compatible');
 							}
 							break;
 						case 'po':
+							$this->setDictionaryFileId($path, $identifier);
 							return $this->parsePoFile(basename($path));
 							break;
 						default:
 							throw new \InvalidArgumentException('Unsupported file type');
 					}
+					$this->setDictionaryFileId($path, $identifier);
 				} catch (\BadMethodCallException $exception) {
 					throw new \BadMethodCallException('Dictionary file structure is not correct.', 0, $exception);
 				}
@@ -269,7 +275,7 @@ class GettextDictionary {
 	 * @param array $comments Comments
 	 * @return string
 	 */
-	private function encodeGettxtPoBlock($original, $translations, $context = '', $comments = array()) {
+	private function encodeGettxtPoBlock($original, $context = '', $translations = NULL, $comments = array()) {
 		$original = (array) $original;
 		$translations = (array) $translations;
 		$translationsCount = count($translations);
@@ -298,7 +304,7 @@ class GettextDictionary {
 			}
 		}
 
-		$block .= $context != '' ? 'msgctx "' . $context . '"' . "\n" : '';
+		$block .= $context != '' ? 'msgctx "' . print_r($context,true) . '"' . "\n" : '';
 		$block .= 'msgid "' . current($original) . '"' . "\n";
 
 		if (count($original) > 1) {
@@ -555,6 +561,51 @@ class GettextDictionary {
 		}
 
 		return $output;
+	}
+
+	/**
+	 * Set info about loaded file into register
+	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param string $path file path of dictionary
+	 * @param string $identifier optionaly specified identifier
+	 * @return void
+	 * @throws \InvalidArgumentException
+	 */
+	private function setDictionaryFileId($path, $identifier = NULL) {
+		$path = realpath($path);
+		$type = pathinfo($path, PATHINFO_EXTENSION);
+		$internalId = $this->getDictionaryFileId($identifier !== NULL ? $identifier : $path);
+
+		if ($internalId === FALSE) {
+			$this->files[] = array(
+				'identifier' => $identifier !== NULL ? $identifier : $this->generateDictionaryFileIdentifier($path),
+				'path' => dirname($path),
+				'filename' => basename($path, $type),
+				'portableObject' => ($type == 'po') ? TRUE : FALSE,
+				'mobileObject' => ($type == 'mo') ? TRUE : FALSE,
+			);
+		} elseif ($type == 'mo') {
+			$this->files[$internalId]['mobileObject'] = TRUE;
+		} elseif ($type == 'po') {
+			$this->files[$internalId]['portableObject'] = TRUE;
+		}
+	}
+
+	/**
+	 * Generate dictionary file identifier automaticaly
+	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @return string
+	 * @throws \InvalidArgumentException
+	 */
+	private function generateDictionaryFileIdentifier($path) {
+		$type = pathinfo($path, PATHINFO_EXTENSION);
+		$identifier = strtolower(basename($path, $type));
+		$possibleId = $this->generateDictionaryFileIdentifier($identifier);
+		if (($possibleId === FALSE) || (($type == 'mo') && ($this->files[$possibleId]['mobileObject'] === FALSE) && ($this->colaborativeMode === TRUE)) || (($type == 'po') && ($this->files[$possibleId]['mobileObject'] === FALSE) && ($this->colaborativeMode === TRUE))) {
+			return $identifier;
+		} else {
+			throw new \InvalidArgumentException('Unable to generate unique file identifier.');
+		}
 	}
 
 }
