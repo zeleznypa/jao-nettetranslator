@@ -532,4 +532,29 @@ class GettextDictionary {
 		}
 	}
 
+	/**
+	 * Return dictionary file internal id if exist, FALSE otherwise
+	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param string $fileDefinition Can be used fullpath, filename or defined identifier
+	 * @return int | FALSE
+	 * @throws \InvalidArgumentException
+	 */
+	private function getDictionaryFileId($fileDefinition) {
+		$output = FALSE;
+
+		foreach ($this->files as $internalId => $file) {
+			if ($file['identifier'] == $fileDefinition) {
+				return $internalId;
+			} elseif ((($file['mobileObject'] === TRUE) && (($file['filename'] . '.mo' == $fileDefinition) || ($file['path'] . DIRECTORY_SEPARATOR . $file['filename'] . '.mo' == $fileDefinition))) || (($file['portableObject'] === TRUE) && (($file['filename'] . '.po' == $fileDefinition) || ($file['path'] . DIRECTORY_SEPARATOR . $file['filename'] . '.po' == $fileDefinition)))) {
+				if ($output !== FALSE) {
+					$output = $internalId;
+				} else {
+					throw new \InvalidArgumentException('More than one file with same definition was found.');
+				}
+			}
+		}
+
+		return $output;
+	}
+
 }
