@@ -20,7 +20,7 @@ class GettextDictionary {
 	);
 
 	/** @var array */
-	private $files = array();
+	public $files = array();
 
 	/** @var array */
 	private $headers = array();
@@ -580,7 +580,7 @@ class GettextDictionary {
 			$this->files[] = array(
 				'identifier' => $identifier !== NULL ? $identifier : $this->generateDictionaryFileIdentifier($path),
 				'path' => dirname($path),
-				'filename' => basename($path, $type),
+				'filename' => basename($path,'.'.$type),
 				'portableObject' => ($type == 'po') ? TRUE : FALSE,
 				'mobileObject' => ($type == 'mo') ? TRUE : FALSE,
 			);
@@ -599,7 +599,7 @@ class GettextDictionary {
 	 */
 	private function generateDictionaryFileIdentifier($path) {
 		$type = pathinfo($path, PATHINFO_EXTENSION);
-		$identifier = strtolower(basename($path, $type));
+		$identifier = strtolower(basename($path,'.'.$type));
 		$possibleId = $this->getDictionaryFileId($identifier);
 		if (($possibleId === FALSE) || (($type == 'mo') && ($this->files[$possibleId]['mobileObject'] === FALSE) && ($this->colaborativeMode === TRUE)) || (($type == 'po') && ($this->files[$possibleId]['mobileObject'] === FALSE) && ($this->colaborativeMode === TRUE))) {
 			return $identifier;
