@@ -44,7 +44,7 @@ class GettextDictionary {
 				'Content-Type' => 'text/plain; charset=UTF-8',
 				'Content-Transfer-Encoding' => '8bit',
 				'Plural-Forms' => 'nplurals=2; plural=(n==1)? 0 : 1;',
-				'Last-Translator' => 'JAO NetteTranslator',
+				'Last-Translator' => 'JAO NetteTranslator <info@pavelzelezny.cz>',
 			));
 	}
 
