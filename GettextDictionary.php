@@ -45,6 +45,13 @@ class GettextDictionary {
 				'Content-Transfer-Encoding' => '8bit',
 				'Plural-Forms' => 'nplurals=2; plural=(n==1)? 0 : 1;',
 				'Last-Translator' => 'JAO NetteTranslator <info@pavelzelezny.cz>',
+				'X-Poedit-Language' => '',
+				'X-Poedit-Country' => '',
+				'X-Poedit-SourceCharset' => 'utf-8',
+				'X-Poedit-KeywordsList' => '',
+				'X-Poedit-Basepath' => '.',
+				'X-Poedit-SearchPath-0' => '.',
+				'X-Poedit-SearchPath-1' => '..',
 			));
 	}
 
