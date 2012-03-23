@@ -68,9 +68,9 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 	$dictionary->addOriginal('New','New woman')->setTranslation('Nová');
 
 	// Easiest way to define translation
-	$dictionary->addOriginal('Cat','','Kočka'); //simple
-	$dictionary->addOriginal('Cat','Beautifull woman','Kočička'); // another context
-	$dictionary->addOriginal(array('%s cat','%s cats'),'',array('%s kočka','%s kočky','%s koček')); // with plurals
+	$dictionary->addOriginal('Cat','',NULL,'Kočka'); //simple
+	$dictionary->addOriginal('Cat','Beautifull woman',NULL,'Kočička'); // another context
+	$dictionary->addOriginal(array('%s cat','%s cats'),'',NULL,array('%s kočka','%s kočky','%s koček')); // with plurals
 
 	// Optional show content of dictionary
 	printf("<h2>Headers:</h2><pre>%s</pre>",print_r($dictionary->getHeaders(),true));

@@ -7,17 +7,7 @@
 class GettextDictionary {
 
 	/** @var array */
-	private $defaultHeaders = array(
-		'Project-Id-Version' => '',
-		'POT-Creation-Date' => '', // default value is set in constructor
-		'PO-Revision-Date' => '', // default value is set in constructor
-		'Language-Team' => '',
-		'MIME-Version' => '1.0',
-		'Content-Type' => 'text/plain; charset=UTF-8',
-		'Content-Transfer-Encoding' => '8bit',
-		'Plural-Forms' => 'nplurals=2; plural=(n==1)? 0 : 1;',
-		'Last-Translator' => 'JAO NetteTranslator',
-	);
+	private $defaultHeaders = array();
 
 	/** @var array */
 	public $files = array();
@@ -35,27 +25,37 @@ class GettextDictionary {
 	 * Constructor
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Optional gettext dictionary file path
+	 * @param string $identifier Optional dictionary name
 	 * @return void
-	 * @todo Optionaly dictionary identifier can be set
 	 */
-	public function __construct($path = NULL) {
+	public function __construct($path = NULL, $identifier = NULL) {
 		if ($path !== NULL) {
-			$this->loadDictionary($path);
+			$this->loadDictionary($path, $identifier);
+		} elseif (($path === NULL) && ($identifier !== NULL)) {
+			throw new InvalidArgumentException('New empty dictionary can not have name.');
 		}
 
-		$this->setDefaultHeader('POT-Creation-Date', date("Y-m-d H:iO"));
-		$this->setDefaultHeader('PO-Revision-Date', date("Y-m-d H:iO"));
+		$this->setDefaultHeaders(array(
+				'Project-Id-Version' => '',
+				'POT-Creation-Date' => date("Y-m-d H:iO"),
+				'PO-Revision-Date' => date("Y-m-d H:iO"),
+				'Language-Team' => '',
+				'MIME-Version' => '1.0',
+				'Content-Type' => 'text/plain; charset=UTF-8',
+				'Content-Transfer-Encoding' => '8bit',
+				'Plural-Forms' => 'nplurals=2; plural=(n==1)? 0 : 1;',
+				'Last-Translator' => 'JAO NetteTranslator',
+			));
 	}
 
 	/**
 	 * Load gettext dictionary file
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext dictionary file path
+	 * @param string $identifier Optional dictionary name
 	 * @return \Gettext  provides a fluent interface
 	 * @throws \InvalidArgumentException \BadMethodCallException
-	 * @todo Add info about loaded file into $this->files property
 	 * @todo Change logic of force loading more than one file
-	 * @todo Optionaly dictionary identifier can be set
 	 */
 	public function loadDictionary($path, $identifier = NULL) {
 		if ($this->getTranslationsCount() == 0) {
@@ -93,21 +93,21 @@ class GettextDictionary {
 	 * Save gettext dictionary file
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext dictionary file path
+	 * @param string $identifier Optional dictionary name
 	 * @return \Gettext  provides a fluent interface
 	 * @throws \InvalidArgumentException
-	 * @todo Optionaly dictionary identifier can be set otherwise new data will be saved
 	 */
-	public function saveDictionary($path) {
+	public function saveDictionary($path, $identifier = NULL) {
 		// Force datetime change of newly generated dictionary
 		$this->setHeader('PO-Revision-Date', date("Y-m-d H:iO"));
 
 		if (((file_exists($path) === TRUE) && (is_writable($path))) || ((file_exists($path) === FALSE) && (is_writable(dirname($path))))) {
 			switch (pathinfo($path, PATHINFO_EXTENSION)) {
 				case 'mo':
-					return $this->generateMoFile($path);
+					return $this->generateMoFile($path, $identifier);
 					break;
 				case 'po':
-					return $this->generatePoFile($path);
+					return $this->generatePoFile($path, $identifier);
 					break;
 				default:
 					throw new \InvalidArgumentException('Unsupported file type');
@@ -124,9 +124,9 @@ class GettextDictionary {
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/PO-Files.html#PO-Files
 	 * @throws \BadMethodCallException
-	 * @todo index of file is automaticaly given from $this->files property
 	 */
 	private function parsePoFile($path) {
+		$path = realpath($path);
 		$fp = @fopen($path, 'r');
 
 		while (feof($fp) != TRUE) {
@@ -152,12 +152,12 @@ class GettextDictionary {
 						$comments['previous-untranslated-string'] = $matches[4];
 						break;
 				}
-			} elseif (preg_match('/^msgctx "(.*)"$/', $buffer, $matches)) {
+			} elseif (preg_match('/^msgctxt "(.*)"$/', $buffer, $matches)) {
 				$context = $matches[1];
 			} elseif (preg_match('/^msgid "(.*)"$/', $buffer, $matches)) {
 				$original = $matches[1];
 				if ($matches[1] != '') {
-					$translations = & $this->addOriginal($original, isset($context) ? $context : '');
+					$translations = & $this->addOriginal($original, isset($context) ? $context : '', $path);
 					if (isset($comments)) {
 						$translations->setComments($comments);
 					}
@@ -173,8 +173,9 @@ class GettextDictionary {
 				if ((isset($original)) && ($original != '')) {
 					$translations->setTranslation($translations->getTranslation(isset($lastIndex) ? $lastIndex : 0) . str_replace('\n', "\n", $matches[1]), isset($lastIndex) ? $lastIndex : 0);
 				} else {
+
 					$delimiter = strpos($matches[1], ': ');
-					$this->headers[substr($matches[1], 0, $delimiter)] = trim(substr(str_replace('\n', "\n", $matches[1]), $delimiter + 2));
+					$this->setHeader(substr($matches[1], 0, $delimiter), trim(substr(str_replace('\n', "\n", $matches[1]), $delimiter + 2)), $path);
 				}
 			} elseif (trim($buffer) == '') {
 				unset($comments, $original, $lastIndex, $comment, $context, $translations);
@@ -192,9 +193,9 @@ class GettextDictionary {
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/MO-Files.html#MO-Files
 	 * @throws \BadMethodCallException
-	 * @todo index of file is automaticaly givven from $this->files property
 	 */
 	private function parseMoFile($path) {
+		$path = realpath($path);
 		$fp = @fopen($path, 'rb');
 
 		/* binary block read function */
@@ -220,9 +221,9 @@ class GettextDictionary {
 			$translation = ($translationIndex[$i * 2 + 1] != 0) ? explode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)), $translation = $read($translationIndex[$i * 2 + 1], $translationIndex[$i * 2 + 2], FALSE)) : NULL;
 
 			if ($original[0] != "") {
-				$this->addOriginal($original, $context, $translation);
+				$this->addOriginal($original, $context, $path, $translation);
 			} else {
-				$this->headers = $this->parseMoMetadata(current($translation));
+				$this->setHeaders($this->parseMoMetadata(current($translation)), $path);
 			}
 		}
 		fclose($fp);
@@ -252,15 +253,19 @@ class GettextDictionary {
 	 * Save dictionary data into gettext .po file
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $path Gettext .po file path
+	 * @param string $identifier Optional dictionary name
 	 * @return void
-	 * @todo Optionaly dictionary identifier can be set otherwise new data will be saved
 	 */
-	private function generatePoFile($path) {
+	private function generatePoFile($path, $identifier = NULL) {
 		$fp = fopen($path, 'w');
-		fwrite($fp, $this->encodeGettxtPoBlock('', implode($this->generateHeaders())));
-		foreach ($this->getTranslations() as $data) {
-			foreach ($data as $context => $object) {
-				fwrite($fp, $this->encodeGettxtPoBlock($object->getOriginal(), $context, $object->getTranslations(), $object->getComments()));
+		fwrite($fp, $this->encodeGettxtPoBlock('', '', implode($this->generateHeaders($identifier))));
+		foreach ($this->getTranslations() as $translation) {
+			foreach ($translation as $context => $filesId) {
+				foreach ($filesId as $fileId => $object) {
+					if ($fileId == $this->getDictionaryFileId($identifier)) {
+						fwrite($fp, $this->encodeGettxtPoBlock($object->getOriginal(), $context, $object->getTranslations(), $object->getComments()));
+					}
+				}
 			}
 		}
 		fclose($fp);
@@ -304,7 +309,7 @@ class GettextDictionary {
 			}
 		}
 
-		$block .= $context != '' ? 'msgctx "' . print_r($context,true) . '"' . "\n" : '';
+		$block .= $context != '' ? 'msgctxt "' . $context . '"' . "\n" : '';
 		$block .= 'msgid "' . current($original) . '"' . "\n";
 
 		if (count($original) > 1) {
@@ -325,30 +330,36 @@ class GettextDictionary {
 	 * Save dictionary data into gettext .mo file
 	 * @author Don't know who is first autor but my source is https://github.com/marten-cz/NetteTranslator
 	 * @param string $path Gettext .mo file path
+	 * @param string $identifier Optional dictionary name
 	 * @return void
-	 * @todo Optionaly dictionary identifier can be set otherwise new data will be saved
 	 */
-	private function generateMoFile($path) {
-		$metadata = implode($this->generateHeaders());
-		$items = $this->getTranslationsCount() + 1;
+	private function generateMoFile($path, $identifier = NULL) {
+		$metadata = implode($this->generateHeaders($identifier));
+		$identifier = $this->getDictionaryFileId($identifier);
+		$items = $this->getTranslationsCount($identifier) + 1;
 		$strings = $metadata . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00));
 		$idsOffsets = array(0, 28 + $items * 16);
 		$stringsOffsets = array(array(0, strlen($metadata)));
 		$ids = '';
-		foreach ($this->getTranslations() as $translation) {
-			foreach ($translation as $context => $object) {
-				$original = $object->getOriginal();
-				$id = $context != '' ? $context . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x04)) . $original[0] : $original[0];
-				if (count($original) > 1) {
-					$id .= iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)) . end($original);
-				}
 
-				$string = implode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)), $object->getTranslations());
-				$idsOffsets[] = strlen($id);
-				$idsOffsets[] = strlen($ids) + 28 + $items * 16;
-				$stringsOffsets[] = array(strlen($strings), strlen($string));
-				$ids .= $id . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00));
-				$strings .= $string . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00));
+		foreach ($this->getTranslations() as $translation) {
+			foreach ($translation as $context => $filesId) {
+				foreach ($filesId as $fileId => $object) {
+					if ($fileId == $identifier) {
+						$original = $object->getOriginal();
+						$id = $context != '' ? $context . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x04)) . $original[0] : $original[0];
+						if (count($original) > 1) {
+							$id .= iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)) . end($original);
+						}
+
+						$string = implode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)), $object->getTranslations());
+						$idsOffsets[] = strlen($id);
+						$idsOffsets[] = strlen($ids) + 28 + $items * 16;
+						$stringsOffsets[] = array(strlen($strings), strlen($string));
+						$ids .= $id . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00));
+						$strings .= $string . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00));
+					}
+				}
 			}
 		}
 
@@ -370,10 +381,11 @@ class GettextDictionary {
 	/**
 	 * Return headers to store in file
 	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param string $identifier Optional dictionary name
 	 * @return array
 	 */
-	private function generateHeaders() {
-		foreach ($this->getHeaders() as $key => $val) {
+	private function generateHeaders($identifier = NULL) {
+		foreach ($this->getHeaders($this->getDictionaryFileId($identifier)) as $key => $val) {
 			$headers[] = $key . ': ' . $val . "\n";
 		}
 		return $headers;
@@ -382,34 +394,60 @@ class GettextDictionary {
 	/**
 	 * Return dictionary headers
 	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param string $identifier Optional dictionary name
 	 * @return array
-	 * @todo Optionaly dictionary identifier can be set otherwise header for new data will be returned
+	 * @todo add check of existance $output[$identifier]
 	 */
-	public function getHeaders() {
-		return array_merge($this->defaultHeaders, $this->headers);
+	public function getHeaders($identifier = NULL) {
+		$output = array();
+		foreach ($this->headers as $fileId => $headers) {
+			$output[$fileId] = array_merge($this->defaultHeaders, $this->headers[$fileId]);
+		}
+
+		return $identifier === NULL ? $output : $output[$this->getDictionaryFileId($identifier)];
 	}
 
 	/**
 	 * Return dictionary translation objects
 	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param string $identifier Optional dictionary name
 	 * @return array
-	 * @todo Optionaly dictionary identifier can be set otherwise all translations will be returned
 	 */
-	public function getTranslations() {
-		return $this->translations;
+	public function getTranslations($identifier = NULL) {
+		if($identifier === NULL){
+			return $this->translations;
+		} else {
+			$output = array();
+			foreach($this->translations as $original => $contexts){
+				foreach ($contexts as $context => $fileIds){
+					foreach($fileIds as $fileId => $translation){
+						if($fileId == $this->getDictionaryFileId($identifier)){
+							$output[$original][$context] = $translation;
+						}
+					}
+				}
+			}
+			return $output;
+		}
 	}
 
 	/**
 	 * How many translation objects are in dictionary
 	 * Each context variant is counted as one
 	 * @author Pavel Železný <info@pavelzelezny.cz>
+	 * @param string $identifier Optional dictionary name
 	 * @return int
-	 * @todo Optionaly dictionary identifier can be set otherwise all translations count will be returned
 	 */
-	private function getTranslationsCount() {
+	private function getTranslationsCount($identifier = NULL) {
 		$count = 0;
 		foreach ($this->getTranslations() as $translation) {
-			$count += count($translation);
+			foreach ($translation as $context) {
+				foreach (array_keys($context) as $fileId) {
+					if (($identifier === NULL) || ($fileId == $this->getDictionaryFileId($identifier))) {
+						$count = $count + 1;
+					}
+				}
+			}
 		}
 		return $count;
 	}
@@ -418,14 +456,13 @@ class GettextDictionary {
 	 * Set default dictionary headers
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param array $headers
-	 * @return void
-	 * @todo Optionaly dictionary identifier can be set otherwise new dictionary headers will be set
-	 * @todo Investigate posibility of fluent interface here
+	 * @return \GettextTranslation  provides a fluent interface
 	 */
 	public function setDefaultHeaders($headers) {
 		foreach ($headers as $index => $value) {
-			$this->setdefaultHeaders($index, $value);
+			$this->setdefaultHeader($index, $value);
 		}
+		return $this;
 	}
 
 	/**
@@ -433,26 +470,25 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $index
 	 * @param string $value
-	 * @return void
-	 * @todo Optionaly dictionary identifier can be set otherwise new dictionary headers will be set
-	 * @todo Investigate posibility of fluent interface here
+	 * @return \GettextTranslation  provides a fluent interface
 	 */
 	public function setDefaultHeader($index, $value) {
 		$this->defaultHeaders[$index] = $value;
+		return $this;
 	}
 
 	/**
 	 * Set dictionary headers
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param array $headers
-	 * @return void
-	 * @todo Optionaly dictionary identifier can be set otherwise new dictionary headers will be set
-	 * @todo Investigate posibility of fluent interface here
+	 * @param string $identifier Optional dictionary name
+	 * @return \GettextTranslation  provides a fluent interface
 	 */
-	public function setHeaders($headers) {
+	public function setHeaders($headers, $identifier = NULL) {
 		foreach ($headers as $index => $value) {
-			$this->setHeader($index, $value);
+			$this->setHeader($index, $value, $identifier);
 		}
+		return $this;
 	}
 
 	/**
@@ -460,12 +496,12 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $index
 	 * @param string $value
-	 * @return void
-	 * @todo Optionaly dictionary identifier can be set otherwise new dictionary header will be set
-	 * @todo Investigate posibility of fluent interface here
+	 * @param string $identifier Optional dictionary name
+	 * @return \GettextTranslation  provides a fluent interface
 	 */
-	public function setHeader($index, $value) {
-		$this->headers[$index] = $value;
+	public function setHeader($index, $value, $identifier = NULL) {
+		$this->headers[$this->getDictionaryFileId($identifier)][$index] = $value;
+		return $this;
 	}
 
 	/**
@@ -476,20 +512,23 @@ class GettextDictionary {
 	 * @param string|array $translation
 	 * @return \GettextTranslation  provides a fluent interface
 	 * @throws \BadMethodCallException
-	 * @todo Optionaly dictionary identifier can be set otherwise new dictionary original will be set
 	 */
-	public function addOriginal($original, $context = '', $translation = NULL) {
+	public function addOriginal($original, $context = '', $identifier = NULL, $translation = NULL) {
+		$identifier = $this->getDictionaryFileId($identifier);
+
 		if (((is_array($translation) === TRUE) && (count($translation) > 1)) && ((count($original) < 2) || (is_array($original) === FALSE))) {
 			throw new \BadMethodCallException('Translation with plurals need to have plural definition.');
 		} elseif (trim(is_array($original) ? $original[0] : $original) == '') {
 			throw new \BadMethodCallException('Untranslated string cannot be empty.');
 		} elseif (is_string($context) === FALSE) {
 			throw new \BadMethodCallException('Context have to be string.');
-		} elseif (isset($this->translations[is_array($original) ? $original[0] : $original][$context])) {
+		} elseif (isset($this->translations[is_array($original) ? $original[0] : $original][$context][$this->generateDictionaryFileIdentifier($identifier)])) {
 			throw new \BadMethodCallException('Same defined original is exist.');
+		} elseif ($identifier === FALSE) {
+			throw new \BadMethodCallException('Required dictionary source is not exist.');
 		}
 
-		return $this->translations[is_array($original) ? $original[0] : $original][$context] = new GettextTranslation($original, $context, $translation);
+		return $this->translations[is_array($original) ? $original[0] : $original][$context][$this->generateDictionaryFileIdentifier($identifier)] = new GettextTranslation($original, $context, $translation);
 	}
 
 	/**
@@ -499,14 +538,17 @@ class GettextDictionary {
 	 * @param string $context
 	 * @return \GettextTranslation  provides a fluent interface
 	 * @throws \BadMethodCallException
-	 * @todo Optionaly dictionary identifier can be set otherwise get original from all dictionaries
 	 */
-	public function getOriginal($original, $context = '') {
-		if (!isset($this->translations[is_array($original) ? $original[0] : $original][$context])) {
+	public function getOriginal($original, $context = '', $identifier = NULL) {
+		$identifier = $this->getDictionaryFileId($identifier);
+
+		if (!isset($this->translations[is_array($original) ? $original[0] : $original][$context][$identifier])) {
 			throw new \BadMethodCallException('Required original is not exist.');
+		} elseif ($identifier === FALSE) {
+			throw new \BadMethodCallException('Required dictionary source is not exist.');
 		}
 
-		return $this->translations[is_array($original) ? $original[0] : $original][$context];
+		return $this->translations[is_array($original) ? $original[0] : $original][$context][$identifier];
 	}
 
 	/**
@@ -516,25 +558,29 @@ class GettextDictionary {
 	 * @param string $context
 	 * @return \GettextTranslation  provides a fluent interface
 	 * @throws \BadMethodCallException
-	 * @todo Optionaly dictionary identifier can be set otherwise get original from all dictionaries
 	 */
-	public function getTranslation($original, $context = '') {
-		return $this->getOriginal($original, $context);
+	public function getTranslation($original, $context = '', $identifier = NULL) {
+		return $this->getOriginal($original, $context, $identifier);
 	}
 
 	/**
 	 * Remove unwanted translation
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $original
-	 * @param string $context if NULL, remove whole translation otherwise remove defined context
+	 * @param string $context if NULL, remove whole translation  otherwise remove defined context
 	 * @return void
-	 * @todo Optionaly dictionary identifier can be set otherwise remove original from new dictionary
 	 */
-	public function removeTranslation($original, $context = NULL) {
-		if (($context != NULL) && (isset($this->translations[$original][$context]))) {
-			unset($this->translations[$original][$context]);
+	public function removeTranslation($original, $context = NULL, $identifier = NULL) {
+		$identifier = $this->getDictionaryFileId($identifier);
+
+		if (($context != NULL) && (isset($this->translations[$original][$context][$identifier]))) {
+			unset($this->translations[$original][$context][$identifier]);
 		} elseif (($context === NULL) && (isset($this->translations[$original]))) {
-			unset($this->translations[$original]);
+			foreach ($this->translations[$original] as $context => $fileIdentifier) {
+				if ($fileIdentifier === $identifier) {
+					unset($this->translations[$original][$context][$fileIdentifier]);
+				}
+			}
 		}
 	}
 
@@ -546,21 +592,26 @@ class GettextDictionary {
 	 * @throws \InvalidArgumentException
 	 */
 	private function getDictionaryFileId($fileDefinition) {
-		$output = FALSE;
-
-		foreach ($this->files as $internalId => $file) {
-			if ($file['identifier'] == $fileDefinition) {
-				return $internalId;
-			} elseif ((($file['mobileObject'] === TRUE) && (($file['filename'] . '.mo' == $fileDefinition) || ($file['path'] . DIRECTORY_SEPARATOR . $file['filename'] . '.mo' == $fileDefinition))) || (($file['portableObject'] === TRUE) && (($file['filename'] . '.po' == $fileDefinition) || ($file['path'] . DIRECTORY_SEPARATOR . $file['filename'] . '.po' == $fileDefinition)))) {
-				if ($output !== FALSE) {
-					$output = $internalId;
-				} else {
-					throw new \InvalidArgumentException('More than one file with same definition was found.');
+		if ($fileDefinition === '') {
+			return '';
+		} elseif ($fileDefinition === NULL) {
+			return (count($this->files) == 1) ? 0 : '';
+		} else {
+			$output = FALSE;
+			foreach ($this->files as $internalId => $file) {
+				if ($file['identifier'] == $fileDefinition) {
+					return $internalId;
+				} elseif ((($file['mobileObject'] === TRUE) && (($file['filename'] . '.mo' == $fileDefinition) || ($file['path'] . DIRECTORY_SEPARATOR . $file['filename'] . '.mo' == $fileDefinition))) ||
+						(($file['portableObject'] === TRUE) && (($file['filename'] . '.po' == $fileDefinition) || ($file['path'] . DIRECTORY_SEPARATOR . $file['filename'] . '.po' == $fileDefinition)))) {
+					if ($output === FALSE) {
+						$output = $internalId;
+					} else {
+						throw new \InvalidArgumentException('More than one file with same definition was found.');
+					}
 				}
 			}
+			return $output;
 		}
-
-		return $output;
 	}
 
 	/**
@@ -580,7 +631,7 @@ class GettextDictionary {
 			$this->files[] = array(
 				'identifier' => $identifier !== NULL ? $identifier : $this->generateDictionaryFileIdentifier($path),
 				'path' => dirname($path),
-				'filename' => basename($path,'.'.$type),
+				'filename' => basename($path, '.' . $type),
 				'portableObject' => ($type == 'po') ? TRUE : FALSE,
 				'mobileObject' => ($type == 'mo') ? TRUE : FALSE,
 			);
@@ -599,9 +650,9 @@ class GettextDictionary {
 	 */
 	private function generateDictionaryFileIdentifier($path) {
 		$type = pathinfo($path, PATHINFO_EXTENSION);
-		$identifier = strtolower(basename($path,'.'.$type));
+		$identifier = strtolower(basename($path, '.' . $type));
 		$possibleId = $this->getDictionaryFileId($identifier);
-		if (($possibleId === FALSE) || (($type == 'mo') && ($this->files[$possibleId]['mobileObject'] === FALSE) && ($this->colaborativeMode === TRUE)) || (($type == 'po') && ($this->files[$possibleId]['mobileObject'] === FALSE) && ($this->colaborativeMode === TRUE))) {
+		if (($possibleId === FALSE) || (($path === '') && ($possibleId === '')) || (($type == 'mo') && ($this->files[$possibleId]['mobileObject'] === FALSE) && ($this->colaborativeMode === TRUE)) || (($type == 'po') && ($this->files[$possibleId]['mobileObject'] === FALSE) && ($this->colaborativeMode === TRUE))) {
 			return $identifier;
 		} else {
 			throw new \InvalidArgumentException('Unable to generate unique file identifier.');
