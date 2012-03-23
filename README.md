@@ -17,26 +17,34 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 
 	$dictionary = new GettextDictionary();
 	$dictionary->loadDictionary('./dictionary.po');
-	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
+	printf("<h2>Files:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->files,true)));
+	printf("<h2>Headers:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->getHeaders(),true)));
+	printf("<h2>Translations:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->getTranslations(),true)));
 
 
 ### 2) Alternative loading dictionary from .po file ###
 
 	$dictionary = new GettextDictionary('./dictionary.po');
-	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
+	printf("<h2>Files:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->files,true)));
+	printf("<h2>Headers:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->getHeaders(),true)));
+	printf("<h2>Translations:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->getTranslations(),true)));
 
 
 ### 3) Load dictionary from .mo file ###
 
 	$dictionary = new GettextDictionary();
 	$dictionary->loadDictionary('./dictionary.mo');
-	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
+	printf("<h2>Files:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->files,true)));
+	printf("<h2>Headers:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->getHeaders(),true)));
+	printf("<h2>Translations:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->getTranslations(),true)));
 
 
 ### 4) Alternative loading dictionary from .mo file ###
 
 	$dictionary = new GettextDictionary('./dictionary.mo');
-	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
+	printf("<h2>Files:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->files,true)));
+	printf("<h2>Headers:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->getHeaders(),true)));
+	printf("<h2>Translations:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->getTranslations(),true)));
 
 
 ### 5) Generating new dictionary ###
@@ -45,10 +53,11 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 
 	// Setting optional but basic headers.
 	$dictionary->setHeader('Project-Id-Version','Test dictionary 1.0');
-	$dictionary->setHeader('Language-Team','Elite translator monkeys');
+	$dictionary->setHeader('Language-Team','Elite translator monkeys <info@pavelzelezny.cz>');
 	$dictionary->setHeader('Plural-Forms','nplurals=3; plural=(n==1)? 0 : (n>=2 && n<=4)? 1 : 2;');
-	$dictionary->setHeader('Last-Translator','JAO NetteTranslator');
+	$dictionary->setHeader('Last-Translator','JAO NetteTranslator <info@pavelzelezny.cz>');
 	$dictionary->setHeader('X-Poedit-Language','Czech');
+	$dictionary->setHeader('X-Poedit-Country','Czech Republic');
 
 	// Set simple untranslated string for translator team
 	$dictionary->addOriginal('Translate this please');
@@ -71,10 +80,6 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 	$dictionary->addOriginal('Cat','',NULL,'Kočka'); //simple
 	$dictionary->addOriginal('Cat','Beautifull woman',NULL,'Kočička'); // another context
 	$dictionary->addOriginal(array('%s cat','%s cats'),'',NULL,array('%s kočka','%s kočky','%s koček')); // with plurals
-
-	// Optional show content of dictionary
-	printf("<h2>Headers:</h2><pre>%s</pre>",print_r($dictionary->getHeaders(),true));
-	printf("<h2>Translations:</h2><pre>%s</pre>",print_r($dictionary->getTranslations(),true));
 
 	// There is also support for adding many types of comments
 	$dictionary->getOriginal('Translate this please')->setComment('comment','translator-comments');
@@ -99,6 +104,11 @@ Now here is just Gettex library to manipulate with gettext .po and .mo files.
 	// Save dictionary
 	$dictionary->saveDictionary('./dictionary.po');
 	$dictionary->saveDictionary('./dictionary.mo');
+
+	// Optional show content of dictionary
+	printf("<h2>Files:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->files,true)));
+	printf("<h2>Headers:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->getHeaders(),true)));
+	printf("<h2>Translations:</h2><pre>%s</pre>",htmlspecialchars(print_r($dictionary->getTranslations(),true)));
 
 ### 6) Discussion ###
 When you need to discuss, write in [Nette forum](http://forum.nette.org/cs/10020-jao-nettetranslator-translatorpanel-jinak-a-mozna-nekdy-i-lepe) in czech language or on [Google+](https://plus.google.com/117076681840647718622) in english language.
