@@ -99,7 +99,7 @@ class GettextDictionary {
 	 */
 	public function saveDictionary($path, $identifier = NULL) {
 		// Force datetime change of newly generated dictionary
-		$this->setHeader('PO-Revision-Date', date("Y-m-d H:iO"));
+		$this->setHeader('PO-Revision-Date', date("Y-m-d H:iO"),$identifier);
 
 		if (((file_exists($path) === TRUE) && (is_writable($path))) || ((file_exists($path) === FALSE) && (is_writable(dirname($path))))) {
 			switch (pathinfo($path, PATHINFO_EXTENSION)) {
@@ -255,6 +255,7 @@ class GettextDictionary {
 	 * @param string $path Gettext .po file path
 	 * @param string $identifier Optional dictionary name
 	 * @return void
+	 * @todo Optimize generating by use $this->Translations($identifier);
 	 */
 	private function generatePoFile($path, $identifier = NULL) {
 		$fp = fopen($path, 'w');
@@ -332,6 +333,7 @@ class GettextDictionary {
 	 * @param string $path Gettext .mo file path
 	 * @param string $identifier Optional dictionary name
 	 * @return void
+	 * @todo Optimize generating by use $this->Translations($identifier);
 	 */
 	private function generateMoFile($path, $identifier = NULL) {
 		$metadata = implode($this->generateHeaders($identifier));
@@ -400,7 +402,7 @@ class GettextDictionary {
 	 */
 	public function getHeaders($identifier = NULL) {
 		$output = array();
-		foreach ($this->headers as $fileId => $headers) {
+		foreach (array_keys($this->headers) as $fileId) {
 			$output[$fileId] = array_merge($this->defaultHeaders, $this->headers[$fileId]);
 		}
 
@@ -509,6 +511,7 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string|array $original
 	 * @param string $context
+	 * @param string $identifier Optional dictionary name
 	 * @param string|array $translation
 	 * @return \GettextTranslation  provides a fluent interface
 	 * @throws \BadMethodCallException
@@ -536,6 +539,7 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string|array $original
 	 * @param string $context
+	 * @param string $identifier Optional dictionary name
 	 * @return \GettextTranslation  provides a fluent interface
 	 * @throws \BadMethodCallException
 	 */
@@ -556,6 +560,7 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string|array $original
 	 * @param string $context
+	 * @param string $identifier Optional dictionary name
 	 * @return \GettextTranslation  provides a fluent interface
 	 * @throws \BadMethodCallException
 	 */
@@ -568,6 +573,7 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $original
 	 * @param string $context if NULL, remove whole translation  otherwise remove defined context
+	 * @param string $identifier Optional dictionary name
 	 * @return void
 	 */
 	public function removeTranslation($original, $context = NULL, $identifier = NULL) {
