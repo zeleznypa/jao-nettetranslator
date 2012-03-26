@@ -262,18 +262,13 @@ class GettextDictionary {
 	 * @param string $path Gettext .po file path
 	 * @param string $identifier Optional dictionary name
 	 * @return void
-	 * @todo Optimize generating by use $this->Translations($identifier);
 	 */
 	private function generatePoFile($path, $identifier = NULL) {
 		$fp = fopen($path, 'w');
 		fwrite($fp, $this->encodeGettxtPoBlock('', '', implode($this->generateHeaders($identifier))));
-		foreach ($this->getTranslations() as $translation) {
-			foreach ($translation as $context => $filesId) {
-				foreach ($filesId as $fileId => $object) {
-					if ($fileId == $this->getDictionaryFileId($identifier)) {
-						fwrite($fp, $this->encodeGettxtPoBlock($object->getOriginal(), $context, $object->getTranslations(), $object->getComments()));
-					}
-				}
+		foreach ($this->getTranslations($identifier !== NULL ? $identifier : $this->getDictionaryFileId($identifier)) as $translation) {
+			foreach ($translation as $context => $object) {
+				fwrite($fp, $this->encodeGettxtPoBlock($object->getOriginal(), $context, $object->getTranslations(), $object->getComments()));
 			}
 		}
 		fclose($fp);
@@ -441,7 +436,7 @@ class GettextDictionary {
 			foreach ($this->translations as $original => $contexts) {
 				foreach ($contexts as $context => $fileIds) {
 					foreach ($fileIds as $fileId => $translation) {
-						if ($fileId == $this->getDictionaryFileId($identifier)) {
+						if ($fileId === $this->getDictionaryFileId($identifier)) {
 							$output[$original][$context] = $translation;
 						}
 					}
