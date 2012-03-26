@@ -262,6 +262,7 @@ class GettextDictionary {
 	 * @param string $path Gettext .po file path
 	 * @param string $identifier Optional dictionary name
 	 * @return void
+	 * @throws \InvalidArgumentException
 	 */
 	private function generatePoFile($path, $identifier = NULL) {
 		$fp = fopen($path, 'w');
@@ -335,7 +336,7 @@ class GettextDictionary {
 	 * @param string $path Gettext .mo file path
 	 * @param string $identifier Optional dictionary name
 	 * @return void
-	 * @todo Optimize generating by use $this->Translations($identifier);
+	 * @throws \InvalidArgumentException
 	 */
 	private function generateMoFile($path, $identifier = NULL) {
 		$metadata = implode($this->generateHeaders($identifier));
@@ -346,24 +347,20 @@ class GettextDictionary {
 		$stringsOffsets = array(array(0, strlen($metadata)));
 		$ids = '';
 
-		foreach ($this->getTranslations() as $translation) {
-			foreach ($translation as $context => $filesId) {
-				foreach ($filesId as $fileId => $object) {
-					if ($fileId == $identifier) {
-						$original = $object->getOriginal();
-						$id = $context != '' ? $context . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x04)) . $original[0] : $original[0];
-						if (count($original) > 1) {
-							$id .= iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)) . end($original);
-						}
-
-						$string = implode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)), $object->getTranslations());
-						$idsOffsets[] = strlen($id);
-						$idsOffsets[] = strlen($ids) + 28 + $items * 16;
-						$stringsOffsets[] = array(strlen($strings), strlen($string));
-						$ids .= $id . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00));
-						$strings .= $string . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00));
-					}
+		foreach ($this->getTranslations($identifier !== NULL ? $identifier : $this->getDictionaryFileId($identifier)) as $translation) {
+			foreach ($translation as $context => $object) {
+				$original = $object->getOriginal();
+				$id = $context != '' ? $context . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x04)) . $original[0] : $original[0];
+				if (count($original) > 1) {
+					$id .= iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)) . end($original);
 				}
+
+				$string = implode(iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00)), $object->getTranslations());
+				$idsOffsets[] = strlen($id);
+				$idsOffsets[] = strlen($ids) + 28 + $items * 16;
+				$stringsOffsets[] = array(strlen($strings), strlen($string));
+				$ids .= $id . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00));
+				$strings .= $string . iconv('UTF-32BE', 'UTF-8' . '//IGNORE', pack('N', 0x00));
 			}
 		}
 
@@ -621,7 +618,7 @@ class GettextDictionary {
 	 * @return int | FALSE
 	 * @throws \InvalidArgumentException
 	 */
-	private function getDictionaryFileId($fileDefinition) {
+	public function getDictionaryFileId($fileDefinition) {
 		if ($fileDefinition === '') {
 			return '';
 		} elseif ($fileDefinition === NULL) {
@@ -629,7 +626,7 @@ class GettextDictionary {
 		} else {
 			$output = FALSE;
 			foreach ($this->files as $internalId => $file) {
-				if ($file['identifier'] == $fileDefinition) {
+				if (($file['identifier'] === $fileDefinition) || ($internalId === $fileDefinition)) {
 					return $internalId;
 				} elseif ((($file['mobileObject'] === TRUE) && (($file['filename'] . '.mo' == $fileDefinition) || ($file['path'] . DIRECTORY_SEPARATOR . $file['filename'] . '.mo' == $fileDefinition))) ||
 						(($file['portableObject'] === TRUE) && (($file['filename'] . '.po' == $fileDefinition) || ($file['path'] . DIRECTORY_SEPARATOR . $file['filename'] . '.po' == $fileDefinition)))) {
