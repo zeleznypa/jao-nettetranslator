@@ -36,23 +36,23 @@ class GettextDictionary {
 		}
 
 		$this->setDefaultHeaders(array(
-				'Project-Id-Version' => '',
-				'POT-Creation-Date' => date("Y-m-d H:iO"),
-				'PO-Revision-Date' => date("Y-m-d H:iO"),
-				'Language-Team' => '',
-				'MIME-Version' => '1.0',
-				'Content-Type' => 'text/plain; charset=UTF-8',
-				'Content-Transfer-Encoding' => '8bit',
-				'Plural-Forms' => 'nplurals=2; plural=(n==1)? 0 : 1;',
-				'Last-Translator' => 'JAO NetteTranslator <info@pavelzelezny.cz>',
-				'X-Poedit-Language' => '',
-				'X-Poedit-Country' => '',
-				'X-Poedit-SourceCharset' => 'utf-8',
-				'X-Poedit-KeywordsList' => '',
-				'X-Poedit-Basepath' => '.',
-				'X-Poedit-SearchPath-0' => '.',
-				'X-Poedit-SearchPath-1' => '..',
-			));
+			'Project-Id-Version' => '',
+			'POT-Creation-Date' => date("Y-m-d H:iO"),
+			'PO-Revision-Date' => date("Y-m-d H:iO"),
+			'Language-Team' => '',
+			'MIME-Version' => '1.0',
+			'Content-Type' => 'text/plain; charset=UTF-8',
+			'Content-Transfer-Encoding' => '8bit',
+			'Plural-Forms' => 'nplurals=2; plural=(n==1)? 0 : 1;',
+			'Last-Translator' => 'JAO NetteTranslator <info@pavelzelezny.cz>',
+			'X-Poedit-Language' => '',
+			'X-Poedit-Country' => '',
+			'X-Poedit-SourceCharset' => 'utf-8',
+			'X-Poedit-KeywordsList' => '',
+			'X-Poedit-Basepath' => '.',
+			'X-Poedit-SearchPath-0' => '.',
+			'X-Poedit-SearchPath-1' => '..',
+		));
 	}
 
 	/**
@@ -61,7 +61,7 @@ class GettextDictionary {
 	 * @param string $path Gettext dictionary file path
 	 * @param string $identifier Optional dictionary name
 	 * @return \Gettext  provides a fluent interface
-	 * @throws \InvalidArgumentException \BadMethodCallException
+	 * @throws \InvalidArgumentException \InvalidArgumentException
 	 * @todo Change logic of force loading more than one file
 	 */
 	public function loadDictionary($path, $identifier = NULL) {
@@ -85,8 +85,8 @@ class GettextDictionary {
 							throw new \InvalidArgumentException('Unsupported file type');
 					}
 					$this->setDictionaryFileId($path, $identifier);
-				} catch (\BadMethodCallException $exception) {
-					throw new \BadMethodCallException('Dictionary file structure is not correct.', 0, $exception);
+				} catch (\InvalidArgumentException $exception) {
+					throw new \InvalidArgumentException('Dictionary file structure is not correct.', 0, $exception);
 				}
 			} else {
 				throw new \InvalidArgumentException('Dictionary file is not exist or is not readable');
@@ -106,7 +106,7 @@ class GettextDictionary {
 	 */
 	public function saveDictionary($path, $identifier = NULL) {
 		// Force datetime change of newly generated dictionary
-		$this->setHeader('PO-Revision-Date', date("Y-m-d H:iO"),$identifier);
+		$this->setHeader('PO-Revision-Date', date("Y-m-d H:iO"), $identifier);
 
 		if (((file_exists($path) === TRUE) && (is_writable($path))) || ((file_exists($path) === FALSE) && (is_writable(dirname($path))))) {
 			switch (pathinfo($path, PATHINFO_EXTENSION)) {
@@ -130,7 +130,7 @@ class GettextDictionary {
 	 * @param string $path Gettext .po file path
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/PO-Files.html#PO-Files
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	private function parsePoFile($path) {
 		$path = realpath($path);
@@ -199,7 +199,7 @@ class GettextDictionary {
 	 * @param string $path Gettext .mo file path
 	 * @return \Gettext  provides a fluent interface
 	 * @see http://www.gnu.org/savannah-checkouts/gnu/gettext/manual/html_node/MO-Files.html#MO-Files
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	private function parseMoFile($path) {
 		$path = realpath($path);
@@ -242,7 +242,7 @@ class GettextDictionary {
 	 * Gettext .mo file metadata parser
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $input
-	 * @return array;
+	 * @return array
 	 */
 	private function parseMoMetadata($input) {
 		$input = preg_split('/[\n,]+/', trim($input));
@@ -392,8 +392,10 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $identifier Optional dictionary name
 	 * @return array
+	 * @throws \InvalidArgumentException
 	 */
 	private function generateHeaders($identifier = NULL) {
+		$headers = array();
 		foreach ($this->getHeaders($this->getDictionaryFileId($identifier)) as $key => $val) {
 			$headers[] = $key . ': ' . $val . "\n";
 		}
@@ -405,9 +407,13 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $identifier Optional dictionary name
 	 * @return array
-	 * @todo add check of existance $output[$identifier]
+	 * @throws \InvalidArgumentException
 	 */
 	public function getHeaders($identifier = NULL) {
+		if (($identifier !== NULL) && (($this->getDictionaryFileId($identifier) === FALSE) || (isset($this->headers[$this->getDictionaryFileId($identifier)]) === FALSE))) {
+			throw new InvalidArgumentException('Required dictionary heades are not exist.');
+		}
+
 		$output = array();
 		foreach (array_keys($this->headers) as $fileId) {
 			$output[$fileId] = array_merge($this->defaultHeaders, $this->headers[$fileId]);
@@ -423,14 +429,14 @@ class GettextDictionary {
 	 * @return array
 	 */
 	public function getTranslations($identifier = NULL) {
-		if($identifier === NULL){
+		if ($identifier === NULL) {
 			return $this->translations;
 		} else {
 			$output = array();
-			foreach($this->translations as $original => $contexts){
-				foreach ($contexts as $context => $fileIds){
-					foreach($fileIds as $fileId => $translation){
-						if($fileId == $this->getDictionaryFileId($identifier)){
+			foreach ($this->translations as $original => $contexts) {
+				foreach ($contexts as $context => $fileIds) {
+					foreach ($fileIds as $fileId => $translation) {
+						if ($fileId == $this->getDictionaryFileId($identifier)) {
 							$output[$original][$context] = $translation;
 						}
 					}
@@ -521,21 +527,21 @@ class GettextDictionary {
 	 * @param string $identifier Optional dictionary name
 	 * @param string|array $translation
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	public function addOriginal($original, $context = '', $identifier = NULL, $translation = NULL) {
 		$identifier = $this->getDictionaryFileId($identifier);
 
 		if (((is_array($translation) === TRUE) && (count($translation) > 1)) && ((count($original) < 2) || (is_array($original) === FALSE))) {
-			throw new \BadMethodCallException('Translation with plurals need to have plural definition.');
+			throw new \InvalidArgumentException('Translation with plurals need to have plural definition.');
 		} elseif (trim(is_array($original) ? $original[0] : $original) == '') {
-			throw new \BadMethodCallException('Untranslated string cannot be empty.');
+			throw new \InvalidArgumentException('Untranslated string cannot be empty.');
 		} elseif (is_string($context) === FALSE) {
-			throw new \BadMethodCallException('Context have to be string.');
+			throw new \InvalidArgumentException('Context have to be string.');
 		} elseif (isset($this->translations[is_array($original) ? $original[0] : $original][$context][$this->generateDictionaryFileIdentifier($identifier)])) {
-			throw new \BadMethodCallException('Same defined original is exist.');
+			throw new \InvalidArgumentException('Same defined original is exist.');
 		} elseif ($identifier === FALSE) {
-			throw new \BadMethodCallException('Required dictionary source is not exist.');
+			throw new \InvalidArgumentException('Required dictionary source is not exist.');
 		}
 
 		return $this->translations[is_array($original) ? $original[0] : $original][$context][$this->generateDictionaryFileIdentifier($identifier)] = new GettextTranslation($original, $context, $translation);
@@ -548,15 +554,15 @@ class GettextDictionary {
 	 * @param string $context
 	 * @param string $identifier Optional dictionary name
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	public function getOriginal($original, $context = '', $identifier = NULL) {
 		$identifier = $this->getDictionaryFileId($identifier);
 
 		if (!isset($this->translations[is_array($original) ? $original[0] : $original][$context][$identifier])) {
-			throw new \BadMethodCallException('Required original is not exist.');
+			throw new \InvalidArgumentException('Required original is not exist.');
 		} elseif ($identifier === FALSE) {
-			throw new \BadMethodCallException('Required dictionary source is not exist.');
+			throw new \InvalidArgumentException('Required dictionary source is not exist.');
 		}
 
 		return $this->translations[is_array($original) ? $original[0] : $original][$context][$identifier];
@@ -569,7 +575,7 @@ class GettextDictionary {
 	 * @param string $context
 	 * @param string $identifier Optional dictionary name
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	public function getTranslation($original, $context = '', $identifier = NULL) {
 		return $this->getOriginal($original, $context, $identifier);

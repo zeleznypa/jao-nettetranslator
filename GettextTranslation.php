@@ -25,6 +25,7 @@ class GettextTranslation {
 	 * @param string|array $context  context of untranslated string
 	 * @param string|array $translation  singular and optionaly plural form of translated string
 	 * @return void
+	 * @throws \InvalidArgumentException
 	 */
 	public function __construct($original = NULL, $context = NULL, $translation = NULL) {
 		if ($original !== NULL) {
@@ -76,10 +77,11 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param int $index Index of translation
 	 * @return array
+	 * @throws \InvalidArgumentException
 	 */
 	public function getTranslation($index) {
 		if (!isset($this->translation[$index])) {
-			throw new \BadMethodCallException('Defined index of translation is not exist.');
+			throw new \InvalidArgumentException('Defined index of translation is not exist.');
 		}
 		return $this->translation[$index];
 	}
@@ -98,12 +100,13 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $type  Type of returned comment
 	 * @return array
+	 * @throws \InvalidArgumentException
 	 */
 	public function getComment($type) {
 		if (in_array($type, $this->getAllowedCommentTypes()) === FALSE) {
-			throw new \BadMethodCallException('Unsupported comment type. Supported type is one from following: ' . implode(', ', $this->getAllowedCommentTypes()) . '.');
+			throw new \InvalidArgumentException('Unsupported comment type. Supported type is one from following: ' . implode(', ', $this->getAllowedCommentTypes()) . '.');
 		} elseif (!isset($this->comment[$type])) {
-			throw new \BadMethodCallException('Defined type of comment is not exist.');
+			throw new \InvalidArgumentException('Defined type of comment is not exist.');
 		}
 		return $this->comment[$type];
 	}
@@ -129,13 +132,13 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string|array $original  singular and optionaly plural form of orginal untranslated string
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	protected function setOriginal($original) {
 		if (trim(is_array($original) ? $original[0] : $original) == '') {
-			throw new \BadMethodCallException('Untranslated string cannot be empty.');
+			throw new \InvalidArgumentException('Untranslated string cannot be empty.');
 		} elseif (count($this->original) > 0) {
-			throw new \BadMethodCallException('Unable to change original untranslated string. Make new translation instead.');
+			throw new \InvalidArgumentException('Unable to change original untranslated string. Make new translation instead.');
 		}
 		$this->original = (array) $original;
 		return $this;
@@ -146,13 +149,13 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $original  context of untranslated string
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	public function setContext($context) {
 		if (is_string($context) === FALSE) {
-			throw new \BadMethodCallException('Context have to be string.');
+			throw new \InvalidArgumentException('Context have to be string.');
 		} elseif ($this->context !== NULL) {
-			throw new \BadMethodCallException('Unable to change context of original untranslated string. Make new translation instead.');
+			throw new \InvalidArgumentException('Unable to change context of original untranslated string. Make new translation instead.');
 		}
 		$this->context = $context;
 		return $this;
@@ -163,7 +166,7 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param array $translation  singular and optionaly plural form of translated string
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throw \BadMethodCallException
+	 * @throw \InvalidArgumentException
 	 */
 	public function setTranslations($translations) {
 		foreach (array_values($translations) as $index => $translation) {
@@ -177,15 +180,15 @@ class GettextTranslation {
 	 * @param string|array $translation  singular and optionaly plural form of translated string
 	 * @param string $index  optionaly we can set index of plural
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	public function setTranslation($translation, $index = 0) {
 		if (is_string($translation) === FALSE) {
-			throw new \BadMethodCallException('Translation have to be string.');
+			throw new \InvalidArgumentException('Translation have to be string.');
 		} elseif (is_int($index) === FALSE) {
-			throw new \BadMethodCallException('Index of translation have to be integer.');
+			throw new \InvalidArgumentException('Index of translation have to be integer.');
 		} elseif (($index > 0) && (count($this->original) < 2)) {
-			throw new \BadMethodCallException('Translation with plurals need to have plural definition.');
+			throw new \InvalidArgumentException('Translation with plurals need to have plural definition.');
 		}
 		$this->translation[$index] = (string) $translation;
 		return $this;
@@ -196,7 +199,7 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param array $comments key mean type and value mean text of comment
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	public function setComments($comments) {
 		foreach ($comments as $type => $comment) {
@@ -211,11 +214,11 @@ class GettextTranslation {
 	 * @param string $type type of comment
 	 * @param string $comment text of comment
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	public function setComment($type, $comment) {
 		if (in_array($type, $this->getAllowedCommentTypes()) === FALSE) {
-			throw new \BadMethodCallException('Unsupported comment type. Supported type is one from following: ' . implode(', ', $this->getAllowedCommentTypes()) . '.');
+			throw new \InvalidArgumentException('Unsupported comment type. Supported type is one from following: ' . implode(', ', $this->getAllowedCommentTypes()) . '.');
 		}
 		$this->comments[$type] = $comment;
 		return $this;
@@ -226,15 +229,15 @@ class GettextTranslation {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $plural  plural form of untranslated string
 	 * @return \GettextTranslation  provides a fluent interface
-	 * @throws \BadMethodCallException
+	 * @throws \InvalidArgumentException
 	 */
 	public function setPlural($plural) {
 		if (count($this->original) == 0) {
-			throw new \BadMethodCallException('Plural form cannot be set without singular variant.');
+			throw new \InvalidArgumentException('Plural form cannot be set without singular variant.');
 		} elseif (count($this->original) > 1) {
-			throw new \BadMethodCallException('Unable to change plural form of original untranslated string. Make new translation instead.');
+			throw new \InvalidArgumentException('Unable to change plural form of original untranslated string. Make new translation instead.');
 		} elseif (is_string($plural) === FALSE) {
-			throw new \BadMethodCallException('Plural have to be string.');
+			throw new \InvalidArgumentException('Plural have to be string.');
 		}
 		$this->original[1] = $plural;
 		return $this;
