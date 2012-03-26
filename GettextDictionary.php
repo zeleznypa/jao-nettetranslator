@@ -411,7 +411,7 @@ class GettextDictionary {
 	 */
 	public function getHeaders($identifier = NULL) {
 		if (($identifier !== NULL) && (($this->getDictionaryFileId($identifier) === FALSE) || (isset($this->headers[$this->getDictionaryFileId($identifier)]) === FALSE))) {
-			throw new InvalidArgumentException('Required dictionary heades are not exist.');
+			throw new InvalidArgumentException('Required dictionary identifier is not exist.');
 		}
 
 		$output = array();
@@ -427,8 +427,13 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $identifier Optional dictionary name
 	 * @return array
+	 * @throws \InvalidArgumentException
 	 */
 	public function getTranslations($identifier = NULL) {
+		if (($identifier !== NULL) && ($this->getDictionaryFileId($identifier) === FALSE)) {
+			throw new InvalidArgumentException('Required dictionary identifier is not exist.');
+		}
+
 		if ($identifier === NULL) {
 			return $this->translations;
 		} else {
@@ -452,8 +457,13 @@ class GettextDictionary {
 	 * @author Pavel Železný <info@pavelzelezny.cz>
 	 * @param string $identifier Optional dictionary name
 	 * @return int
+	 * @throws \InvalidArgumentException
 	 */
 	private function getTranslationsCount($identifier = NULL) {
+		if (($identifier !== NULL) && ($this->getDictionaryFileId($identifier) === FALSE)) {
+			throw new InvalidArgumentException('Required dictionary identifier is not exist.');
+		}
+
 		$count = 0;
 		foreach ($this->getTranslations() as $translation) {
 			foreach ($translation as $context) {
@@ -498,6 +508,7 @@ class GettextDictionary {
 	 * @param array $headers
 	 * @param string $identifier Optional dictionary name
 	 * @return \GettextTranslation  provides a fluent interface
+	 * @throws \InvalidArgumentException
 	 */
 	public function setHeaders($headers, $identifier = NULL) {
 		foreach ($headers as $index => $value) {
@@ -513,8 +524,13 @@ class GettextDictionary {
 	 * @param string $value
 	 * @param string $identifier Optional dictionary name
 	 * @return \GettextTranslation  provides a fluent interface
+	 * @throws \InvalidArgumentException
 	 */
 	public function setHeader($index, $value, $identifier = NULL) {
+		if (($identifier !== NULL) && ($this->getDictionaryFileId($identifier) === FALSE)) {
+			throw new InvalidArgumentException('Required dictionary headers are not exist.');
+		}
+
 		$this->headers[$this->getDictionaryFileId($identifier)][$index] = $value;
 		return $this;
 	}
